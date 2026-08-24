@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ video.title }} — Lectorium{% endblock %}
+
+{% block content %}
+<article class="video-page">
+  <div class="page-heading">
+    <div>
+      <h1>{{ video.title }}</h1>
+
+      {% if video.description %}
+      <p>{{ video.description }}</p>
+      {% endif %}
+    </div>
+
+    <a class="button button-secondary" href="/">
+      К каталогу
+    </a>
+  </div>
+
+  <video
+    id="player"
+    class="video-player"
+    controls
+    preload="metadata"
+  >
+    <source
+      src="{{ url_for('stream_video', video_id=video.id) }}"
+      type="{{ video.mime_type }}"
+    >
+    Ваш браузер не поддерживает HTML5-видео.
+  </video>
+
+  <p class="muted">
+    Просмотр засчитывается после 30 секунд воспроизведения.
+  </p>
+</article>
+
+<script>
+  const player = document.getElementById("player");
+  let viewRegistered = false;
+
+  player.addEventListener("timeupdate", async () => {
+    if (viewRegistered || player.currentTime < 30) {
+      return;
+    }
+
+    viewRegistered = true;
+
+    const response = await fetch(
+      "/videos/{{ video.id }}/view",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          watched_seconds: Math.floor(player.currentTime)
+        })
+      }
+    );
+
+    if (!response.ok) {
+      viewRegistered = false;
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Статистика просмотров</h1>
+</div>
+
+{% if statistics %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Видео</th>
+        <th>Просмотры</th>
+        <th>Уникальные зрители</th>
+        <th>Последний просмотр</th>
+        <th>Детали</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in statistics %}
+      <tr>
+        <td>{{ item.title }}</td>
+        <td>{{ item.total_views }}</td>
+        <td>{{ item.unique_viewers }}</td>
+        <td>
+          {% if item.last_viewed_at %}
+          {{ item.last_viewed_at.strftime("%d.%m.%Y %H:%M") }}
+          {% else %}
+          Нет просмотров
+          {% endif %}
+        </td>
+        <td>
+          <a
+            class="button button-secondary"
+            href="/statistics/videos/{{ item.video_id }}"
+          >
+            Пользователи
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>Видео пока не добавлены.</p>
+{% endif %}
+{% endblock %}

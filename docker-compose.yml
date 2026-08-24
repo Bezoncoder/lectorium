@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: lectorium_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lectorium
+      POSTGRES_USER: lectorium
+      POSTGRES_PASSWORD: lectorium_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "15432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U lectorium -d lectorium"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+  <title>{% block title %}Lectorium{% endblock %}</title>
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', path='css/style.css') }}"
+  >
+</head>
+<body>
+  <header class="header">
+    <div class="container header-content">
+      <a class="logo" href="/">Lectorium</a>
+
+      {% if current_user %}
+      <nav class="navigation">
+        <a href="/">Видео</a>
+        <a href="/statistics">Статистика</a>
+
+        {% if current_user.role == "admin" %}
+        <a href="/admin/videos">Администрирование</a>
+        {% endif %}
+      </nav>
+
+      <div class="user-panel">
+        <span>{{ current_user.login }}</span>
+
+        <form method="post" action="/logout">
+          <button class="button button-secondary" type="submit">
+            Выйти
+          </button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="container page-content">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Видео — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <h1>Учебные видео</h1>
+
+  {% if current_user.role == "admin" %}
+  <a class="button" href="/admin/videos/new">
+    Добавить видео
+  </a>
+  {% endif %}
+</div>
+
+{% if videos %}
+<div class="video-grid">
+  {% for video in videos %}
+  <article class="video-card">
+    <h2>{{ video.title }}</h2>
+
+    {% if video.description %}
+    <p>{{ video.description }}</p>
+    {% endif %}
+
+    <p class="muted">
+      Загружено: {{ video.created_at.strftime("%d.%m.%Y %H:%M") }}
+    </p>
+
+    <a class="button" href="/videos/{{ video.id }}">
+      Смотреть
+    </a>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<p>Видео пока не добавлены.</p>
+{% endif %}
+{% endblock %}

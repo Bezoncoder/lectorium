@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Зрители — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Зрители: {{ video.title }}</h1>
+    <p class="muted">
+      Учитываются просмотры после 30 секунд.
+    </p>
+  </div>
+
+  <a class="button button-secondary" href="/statistics">
+    Назад к статистике
+  </a>
+</div>
+
+{% if viewers %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Пользователь</th>
+        <th>Просмотры</th>
+        <th>Последний просмотр</th>
+        <th>Макс. время</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for viewer in viewers %}
+      <tr>
+        <td>{{ viewer.login }}</td>
+        <td>{{ viewer.views_count }}</td>
+        <td>
+          {{ viewer.last_viewed_at.strftime("%d.%m.%Y %H:%M") }}
+        </td>
+        <td>{{ viewer.max_watched_seconds }} сек.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>У этого видео пока нет засчитанных просмотров.</p>
+{% endif %}
+{% endblock %}

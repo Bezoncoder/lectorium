@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% if video %}
+  {% set page_title = "Редактирование видео" %}
+  {% set form_action = "/admin/videos/" ~ video.id %}
+{% else %}
+  {% set page_title = "Новое видео" %}
+  {% set form_action = "/admin/videos" %}
+{% endif %}
+
+{% block title %}{{ page_title }} — Lectorium{% endblock %}
+
+{% block content %}
+<section class="form-card">
+  <div class="page-heading">
+    <h1>{{ page_title }}</h1>
+
+    <a class="button button-secondary" href="/admin/videos">
+      Назад
+    </a>
+  </div>
+
+  <form
+    method="post"
+    action="{{ form_action }}"
+    class="form"
+    {% if not video %}enctype="multipart/form-data"{% endif %}
+  >
+    <label for="title">Название</label>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      maxlength="255"
+      value="{{ video.title if video else '' }}"
+      required
+    >
+
+    <label for="description">Описание</label>
+    <textarea
+      id="description"
+      name="description"
+      rows="7"
+    >{{ video.description if video and video.description else '' }}</textarea>
+
+    {% if not video %}
+    <label for="video_file">Видеофайл</label>
+    <input
+      id="video_file"
+      name="video_file"
+      type="file"
+      accept=".mp4,.webm,.ogv,.ogg,video/mp4,video/webm,video/ogg"
+      required
+    >
+    {% else %}
+    <p class="muted">
+      Исходный файл: {{ video.original_filename }}
+    </p>
+    {% endif %}
+
+    <button class="button" type="submit">
+      {% if video %}Сохранить{% else %}Загрузить{% endif %}
+    </button>
+  </form>
+</section>
+{% endblock %}
