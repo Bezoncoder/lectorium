@@ -115,7 +115,7 @@ class VideoService:
         view = VideoView(
             video_id=video_id,
             user_id=user_id,
-            watched_seconds=max(30, watched_seconds),
+            watched_seconds=max(15, watched_seconds),
             view_date=datetime.utcnow().date(),
         )
 

@@ -5,6 +5,7 @@
 {% block content %}
 <div class="page-heading">
   <h1>Статистика просмотров</h1>
+
 </div>
 
 {% if statistics %}
@@ -18,6 +19,7 @@
         <th>Последний просмотр</th>
         <th>Детали</th>
       </tr>
+
     </thead>
     <tbody>
       {% for item in statistics %}
@@ -45,6 +47,9 @@
     </tbody>
   </table>
 </div>
+ <p class="muted">
+      Учитываются просмотры более 15 секунд.
+    </p>
 {% else %}
 <p>Видео пока не добавлены.</p>
 {% endif %}

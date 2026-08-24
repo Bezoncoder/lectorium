@@ -16,6 +16,6 @@ class VideoViewPydantic(BasePydantic):
 
 class VideoViewCreatePydantic(BasePydantic):
     watched_seconds: int = Field(
-        ge=30,
+        ge=15,
         le=86_400,
     )

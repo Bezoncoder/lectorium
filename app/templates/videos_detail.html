@@ -31,9 +31,7 @@
     Ваш браузер не поддерживает HTML5-видео.
   </video>
 
-  <p class="muted">
-    Просмотр засчитывается после 30 секунд воспроизведения.
-  </p>
+
 </article>
 
 <script>
@@ -41,7 +39,7 @@
   let viewRegistered = false;
 
   player.addEventListener("timeupdate", async () => {
-    if (viewRegistered || player.currentTime < 30) {
+    if (viewRegistered || player.currentTime < 15) {
       return;
     }
 
