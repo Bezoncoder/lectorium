@@ -4,36 +4,122 @@
 
 {% block content %}
 <div class="page-heading">
-  <h1>Учебные видео</h1>
+  <div>
+    <h1>Учебные видео</h1>
+    <p>Выберите материал из списка или откройте карточку видео.</p>
+  </div>
 
-  {% if current_user.role == "admin" %}
+  {% if current_user and current_user.role == "admin" %}
   <a class="button" href="/admin/videos/new">
-    Добавить видео
+    <span class="material-symbols-outlined" aria-hidden="true">
+      add
+    </span>
+    <span>Добавить видео</span>
   </a>
   {% endif %}
 </div>
 
 {% if videos %}
-<div class="video-grid">
-  {% for video in videos %}
-  <article class="video-card">
-    <h2>{{ video.title }}</h2>
+<div class="videos-layout">
+  <aside class="videos-sidebar" aria-label="Навигация по видео">
+    <div class="videos-sidebar__header">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        playlist_play
+      </span>
+      <span>Содержание</span>
+    </div>
 
-    {% if video.description %}
-    <p>{{ video.description }}</p>
-    {% endif %}
+    <nav class="videos-sidebar__nav" aria-label="Список видео">
+      {% for video in videos %}
+      <a
+        class="videos-sidebar__link"
+        href="/videos/{{ video.id }}"
+        aria-label="Открыть видео: {{ video.title }}"
+      >
+        <span
+          class="material-symbols-outlined videos-sidebar__icon"
+          aria-hidden="true"
+        >
+          play_circle
+        </span>
 
-    <p class="muted">
-      Загружено: {{ video.created_at.strftime("%d.%m.%Y %H:%M") }}
-    </p>
+        <span class="videos-sidebar__details">
+          <span class="videos-sidebar__title">
+            {{ video.title }}
+          </span>
 
-    <a class="button" href="/videos/{{ video.id }}">
-      Смотреть
-    </a>
-  </article>
-  {% endfor %}
+          <time
+            class="videos-sidebar__date"
+            datetime="{{ video.created_at.isoformat() }}"
+          >
+            {{ video.created_at.strftime("%d") }}
+            {{
+              {
+                1: "января",
+                2: "февраля",
+                3: "марта",
+                4: "апреля",
+                5: "мая",
+                6: "июня",
+                7: "июля",
+                8: "августа",
+                9: "сентября",
+                10: "октября",
+                11: "ноября",
+                12: "декабря"
+              }[video.created_at.month]
+            }}
+          </time>
+        </span>
+      </a>
+      {% endfor %}
+    </nav>
+  </aside>
+
+  <section class="video-grid" aria-label="Карточки учебных видео">
+    {% for video in videos %}
+    <article class="video-card">
+      <h2>{{ video.title }}</h2>
+
+      {% if video.description %}
+      <p>{{ video.description }}</p>
+      {% endif %}
+
+      <p class="muted">
+        Загружено:
+        <time datetime="{{ video.created_at.isoformat() }}">
+          {{ video.created_at.strftime("%d.%m.%Y %H:%M") }}
+        </time>
+      </p>
+
+      <a
+        class="button"
+        href="/videos/{{ video.id }}"
+        aria-label="Смотреть видео: {{ video.title }}"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          play_arrow
+        </span>
+        <span>Смотреть</span>
+      </a>
+    </article>
+    {% endfor %}
+  </section>
 </div>
 {% else %}
-<p>Видео пока не добавлены.</p>
+<section class="empty-state" aria-labelledby="empty-videos-title">
+  <span class="material-symbols-outlined" aria-hidden="true">
+    video_library
+  </span>
+  <h2 id="empty-videos-title">Видео пока не добавлены</h2>
+  <p>Когда преподаватель загрузит материалы, они появятся здесь.</p>
+
+  {% if current_user and current_user.role == "admin" %}
+  <a class="button" href="/admin/videos/new">
+    <span class="material-symbols-outlined" aria-hidden="true">add</span>
+    <span>Добавить первое видео</span>
+  </a>
+  {% endif %}
+</section>
 {% endif %}
 {% endblock %}
