@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Расписание — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Расписание курса</h1>
+    <p>Изменяйте программу, даты занятий и привязанные записи.</p>
+  </div>
+
+  <a class="button button-secondary" href="/">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      dashboard
+    </span>
+    <span>В кабинет</span>
+  </a>
+</div>
+
+<section class="admin-schedule-grid">
+  <article class="form-card admin-schedule-card">
+    <h2>Настройки курса</h2>
+
+    <form method="post" action="/admin/schedule/course" class="form">
+      <label for="course-title">Название курса</label>
+      <input
+        id="course-title"
+        name="title"
+        type="text"
+        maxlength="255"
+        value="{{ course.title }}"
+        required
+      >
+
+      <label for="course-dates">Период обучения</label>
+      <input
+        id="course-dates"
+        name="dates"
+        type="text"
+        maxlength="255"
+        value="{{ course.dates }}"
+        placeholder="01.09.2026 — 29.10.2026"
+        required
+      >
+
+      <label for="course-timezone">Часовой пояс</label>
+      <input
+        id="course-timezone"
+        name="timezone"
+        type="text"
+        maxlength="64"
+        value="{{ course.timezone }}"
+        placeholder="МСК"
+        required
+      >
+
+      <label for="telemost-url">Ссылка на Yandex Telemost</label>
+      <input
+        id="telemost-url"
+        name="telemost_url"
+        type="url"
+        value="{{ course.telemost_url or '' }}"
+        placeholder="https://telemost.yandex.ru/..."
+      >
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          save
+        </span>
+        <span>Сохранить курс</span>
+      </button>
+    </form>
+  </article>
+
+  <article class="form-card admin-schedule-card">
+    <h2>Добавить занятие</h2>
+
+    <form method="post" action="/admin/schedule/lessons" class="form">
+      <label for="lesson-title">Название лекции</label>
+      <input
+        id="lesson-title"
+        name="title"
+        type="text"
+        maxlength="500"
+        placeholder="#7 Airflow"
+        required
+      >
+
+      <label for="lesson-starts-at">Дата и время</label>
+      <input
+        id="lesson-starts-at"
+        name="starts_at"
+        type="datetime-local"
+        required
+      >
+
+      <label for="lesson-video">Запись видео</label>
+      <select id="lesson-video" name="video_id">
+        <option value="">Запись будет добавлена позже</option>
+
+        {% for video in videos %}
+        <option value="{{ video.id }}">{{ video.title }}</option>
+        {% endfor %}
+      </select>
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          add
+        </span>
+        <span>Добавить лекцию</span>
+      </button>
+    </form>
+  </article>
+</section>
+
+<section class="admin-lessons-section">
+  <div class="admin-lessons-section__head">
+    <div>
+      <h2>Занятия в расписании</h2>
+      <p class="muted">Всего: {{ lessons | length }}</p>
+    </div>
+
+    {% if lessons %}
+    <form method="post" action="/admin/schedule/clear">
+      <button
+        class="button button-danger"
+        type="submit"
+        onclick="return confirm('Удалить все занятия из расписания? Видеофайлы не будут удалены.')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          delete_sweep
+        </span>
+        <span>Очистить расписание</span>
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if lessons %}
+  <div class="admin-lessons-list">
+    {% for lesson in lessons %}
+    <article class="admin-lesson-card">
+      <form
+        method="post"
+        action="/admin/schedule/lessons/{{ lesson.id }}"
+        class="form"
+      >
+        <div class="admin-lesson-card__head">
+          <h3>Лекция {{ loop.index }}</h3>
+          <input
+            name="sort_order"
+            type="hidden"
+            value="{{ lesson.sort_order }}"
+          >
+        </div>
+
+        <label for="lesson-title-{{ lesson.id }}">Название</label>
+        <input
+          id="lesson-title-{{ lesson.id }}"
+          name="title"
+          type="text"
+          maxlength="500"
+          value="{{ lesson.title }}"
+          required
+        >
+
+        <label for="lesson-start-{{ lesson.id }}">Дата и время</label>
+        <input
+          id="lesson-start-{{ lesson.id }}"
+          name="starts_at"
+          type="datetime-local"
+          value="{{ lesson.starts_at.strftime('%Y-%m-%dT%H:%M') }}"
+          required
+        >
+
+        <label for="lesson-video-{{ lesson.id }}">Запись видео</label>
+        <select id="lesson-video-{{ lesson.id }}" name="video_id">
+          <option value="">Запись ещё не добавлена</option>
+
+          {% for video in videos %}
+          <option
+            value="{{ video.id }}"
+            {% if lesson.video_id == video.id %}selected{% endif %}
+          >
+            {{ video.title }}
+          </option>
+          {% endfor %}
+        </select>
+
+        <div class="admin-lesson-card__actions">
+          <button class="button" type="submit">
+            <span class="material-symbols-outlined" aria-hidden="true">
+              save
+            </span>
+            <span>Сохранить</span>
+          </button>
+        </div>
+      </form>
+
+      <form
+        method="post"
+        action="/admin/schedule/lessons/{{ lesson.id }}/delete"
+        class="admin-lesson-card__delete"
+      >
+        <button
+          class="button button-danger"
+          type="submit"
+          onclick="return confirm('Удалить это занятие из расписания?')"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            delete
+          </span>
+          <span>Удалить</span>
+        </button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="empty-state">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      event_busy
+    </span>
+    <h2>Расписание пустое</h2>
+    <p>Добавьте первое занятие через форму выше.</p>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

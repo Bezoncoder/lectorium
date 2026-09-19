@@ -7,12 +7,12 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.api import admin, auth, statistics, videos
+from app.api import admin, auth, cabinet, statistics, videos
 from app.core.config import settings
 
 """
-
-GET   /                                  → каталог видео
+GET   /                                  → кабинет пользователя
+GET   /videos                            → каталог видео
 GET   /login                             → форма входа
 POST  /login                             → авторизация
 POST  /logout                            → выход
@@ -67,11 +67,14 @@ app.state.templates = Jinja2Templates(
     directory=Path("app/templates"),
 )
 
+
+
+
 app.include_router(auth.router)
+app.include_router(cabinet.router)
 app.include_router(videos.router)
 app.include_router(admin.router)
 app.include_router(statistics.router)
-
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(

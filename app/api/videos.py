@@ -15,7 +15,7 @@ from app.services.video import VideoService
 router = APIRouter(tags=["videos"])
 
 
-@router.get("/")
+@router.get("/videos", name="videos_list")
 async def videos_list(
     request: Request,
     raw_current_user: Annotated[User, Depends(get_current_user)],

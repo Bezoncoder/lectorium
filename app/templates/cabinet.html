@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Кабинет — Lectorium{% endblock %}
+
+{% block content %}
+{% if course %}
+<div class="page-heading cabinet-heading">
+  <div>
+    <h1>{{ course.title }}</h1>
+    <p>{{ course.dates }} · {{ course.timezone }}</p>
+  </div>
+
+  {% if course.telemost_url %}
+  <a
+    class="button button-secondary"
+    href="{{ course.telemost_url }}"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">
+      videocam
+    </span>
+    <span>Открыть Telemost</span>
+  </a>
+  {% endif %}
+</div>
+
+<section class="cabinet-grid">
+  <article class="cabinet-card cabinet-progress-card">
+    <div class="cabinet-card__head">
+      <div>
+        <p class="cabinet-label">Твой прогресс</p>
+        <h2>{{ progress.percent }}%</h2>
+      </div>
+
+      <span
+        class="material-symbols-outlined cabinet-card__icon"
+        aria-hidden="true"
+      >
+        school
+      </span>
+    </div>
+
+    <div
+      class="cabinet-progress-bar"
+      role="progressbar"
+      aria-label="Прогресс курса"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="{{ progress.percent }}"
+    >
+      <span style="width: {{ progress.percent }}%"></span>
+    </div>
+
+    <div class="cabinet-progress-meta">
+      <span>
+        Просмотрено: {{ progress.completed }} из {{ progress.total }}
+      </span>
+      <span>Осталось: {{ progress.remaining }}</span>
+    </div>
+  </article>
+
+  <article class="cabinet-card cabinet-next-card">
+    <div class="cabinet-card__head">
+      <div>
+        <p class="cabinet-label">Ближайшая лекция</p>
+
+        {% if next_lesson %}
+        <h2>{{ next_lesson.title }}</h2>
+        <p class="muted">
+          {{ next_lesson.date_label }} · {{ next_lesson.time_label }}
+        </p>
+        {% else %}
+        <h2>Новых занятий нет</h2>
+        <p class="muted">
+          Расписание завершено или администратор ещё не добавил лекции.
+        </p>
+        {% endif %}
+      </div>
+
+      <span
+        class="material-symbols-outlined cabinet-card__icon"
+        aria-hidden="true"
+      >
+        calendar_month
+      </span>
+    </div>
+  </article>
+</section>
+
+<section class="cabinet-schedule">
+  <div class="cabinet-schedule__head">
+    <div>
+      <h2>Расписание лекций</h2>
+      <p class="muted">
+        Записи лекций появляются по мере добавления администратором.
+      </p>
+    </div>
+
+    {% if current_user.role == "admin" %}
+    <a class="button button-secondary" href="/admin/schedule">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        edit_calendar
+      </span>
+      <span>Редактировать расписание</span>
+    </a>
+    {% endif %}
+  </div>
+
+  {% if lessons %}
+  <div class="schedule-list">
+    {% for lesson in lessons %}
+    <article class="schedule-lesson schedule-lesson--{{ lesson.status }}">
+      <div class="schedule-lesson__date">
+        <strong>{{ lesson.date_day }}</strong>
+        <span>{{ lesson.date_month }}</span>
+        <small>{{ lesson.time_label }}</small>
+      </div>
+
+      <div class="schedule-lesson__body">
+        <div>
+          <p class="schedule-lesson__counter">
+            Лекция {{ loop.index }}
+          </p>
+
+          <h3>{{ lesson.title }}</h3>
+
+          {% if lesson.status == "completed" %}
+          <p class="muted">Лекция просмотрена.</p>
+          {% elif lesson.status == "available" %}
+          <p class="muted">Запись лекции доступна для просмотра.</p>
+          {% elif lesson.status == "upcoming" %}
+          <p class="muted">
+            Занятие состоится {{ lesson.date_label }}.
+          </p>
+          {% else %}
+          <p class="muted">
+            Запись появится после проведения занятия.
+          </p>
+          {% endif %}
+        </div>
+
+        <div class="schedule-lesson__action">
+          {% if lesson.status == "completed" %}
+          <a
+            class="button button-secondary"
+            href="/videos/{{ lesson.video_id }}"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">
+              replay
+            </span>
+            <span>Открыть снова</span>
+          </a>
+
+          {% elif lesson.status == "available" %}
+          <a class="button" href="/videos/{{ lesson.video_id }}">
+            <span class="material-symbols-outlined" aria-hidden="true">
+              play_circle
+            </span>
+            <span>Смотреть запись</span>
+          </a>
+
+          {% elif lesson.status == "upcoming" and course.telemost_url %}
+          <a
+            class="button button-secondary"
+            href="{{ course.telemost_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">
+              videocam
+            </span>
+            <span>На встречу</span>
+          </a>
+
+          {% else %}
+          <span class="schedule-status">Скоро</span>
+          {% endif %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="empty-state">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      calendar_month
+    </span>
+    <h2>Расписание пока пустое</h2>
+    <p>Администратор ещё не добавил занятия.</p>
+  </section>
+  {% endif %}
+</section>
+
+{% else %}
+<section class="empty-state">
+  <span class="material-symbols-outlined" aria-hidden="true">
+    calendar_month
+  </span>
+  <h2>Курс пока не настроен</h2>
+  <p>Администратор добавит программу и расписание позже.</p>
+
+  {% if current_user.role == "admin" %}
+  <a class="button" href="/admin/schedule">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      settings
+    </span>
+    <span>Настроить курс</span>
+  </a>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
