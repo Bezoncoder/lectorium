@@ -7,10 +7,12 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import distinct, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.dao.course import CourseDAO
 from app.db.dao.schedule_lesson import ScheduleLessonDAO
+from app.db.dao.stream_enrollment import StreamEnrollmentDAO
 from app.db.models.course import Course
 from app.db.models.schedule_lesson import ScheduleLesson
+from app.db.models.stream import Stream
+from app.db.models.stream_enrollment import StreamEnrollment
 from app.db.models.video_view import VideoView
 from app.db.session import connection
 
@@ -57,8 +59,19 @@ class CabinetLesson:
 
 
 @dataclass(slots=True)
+class CabinetCourseCard:
+    course: Course
+    stream: Stream
+    enrollment: StreamEnrollment
+    progress: CabinetProgress
+    next_lesson: CabinetLesson | None
+
+
+@dataclass(slots=True)
 class CabinetData:
-    course: Course | None
+    course: Course
+    stream: Stream
+    enrollment: StreamEnrollment
     lessons: list[CabinetLesson]
     next_lesson: CabinetLesson | None
     progress: CabinetProgress
@@ -67,34 +80,87 @@ class CabinetData:
 class CabinetService:
     @staticmethod
     @connection
-    async def get_dashboard(
+    async def get_my_courses(
         user_id: int,
         *,
         session: AsyncSession,
-    ) -> CabinetData:
-        course = await CourseDAO.get_current(session)
+    ) -> list[CabinetCourseCard]:
+        enrollments = await StreamEnrollmentDAO.get_accessible_for_user(
+            session=session,
+            user_id=user_id,
+        )
 
-        if course is None:
-            return CabinetData(
-                course=None,
-                lessons=[],
-                next_lesson=None,
-                progress=CabinetProgress(
-                    completed=0,
-                    total=0,
-                    remaining=0,
-                    percent=0,
-                ),
+        cards: list[CabinetCourseCard] = []
+
+        for enrollment in enrollments:
+            if enrollment.course is None or enrollment.stream is None:
+                continue
+
+            dashboard = await CabinetService._build_dashboard(
+                session=session,
+                enrollment=enrollment,
             )
 
-        lessons = await ScheduleLessonDAO.get_by_course_id(
+            cards.append(
+                CabinetCourseCard(
+                    course=dashboard.course,
+                    stream=dashboard.stream,
+                    enrollment=dashboard.enrollment,
+                    progress=dashboard.progress,
+                    next_lesson=dashboard.next_lesson,
+                )
+            )
+
+        return cards
+
+    @staticmethod
+    @connection
+    async def get_course_dashboard(
+        user_id: int,
+        course_id: int,
+        *,
+        session: AsyncSession,
+    ) -> CabinetData | None:
+        enrollment = await StreamEnrollmentDAO.get_for_user_and_course(
             session=session,
-            course_id=course.id,
+            user_id=user_id,
+            course_id=course_id,
+        )
+
+        if enrollment is None:
+            return None
+
+        if enrollment.course is None or enrollment.stream is None:
+            return None
+
+        if enrollment.status.value not in ("active", "completed"):
+            return None
+
+        return await CabinetService._build_dashboard(
+            session=session,
+            enrollment=enrollment,
+        )
+
+    @staticmethod
+    async def _build_dashboard(
+        *,
+        session: AsyncSession,
+        enrollment: StreamEnrollment,
+    ) -> CabinetData:
+        if enrollment.course is None or enrollment.stream is None:
+            raise ValueError("В зачислении отсутствуют курс или поток")
+
+        lessons = list(
+            await ScheduleLessonDAO.get_by_stream_id(
+                session=session,
+                stream_id=enrollment.stream_id,
+            )
         )
 
         watched_video_ids = await CabinetService._get_watched_video_ids(
             session=session,
-            user_id=user_id,
+            user_id=enrollment.user_id,
+            stream_id=enrollment.stream_id,
         )
 
         now = datetime.now(MOSCOW_TZ)
@@ -112,7 +178,6 @@ class CabinetService:
             lesson.status == "completed"
             for lesson in cabinet_lessons
         )
-
         total = len(cabinet_lessons)
         remaining = max(total - completed, 0)
         percent = completed * 100 // total if total else 0
@@ -127,7 +192,9 @@ class CabinetService:
         )
 
         return CabinetData(
-            course=course,
+            course=enrollment.course,
+            stream=enrollment.stream,
+            enrollment=enrollment,
             lessons=cabinet_lessons,
             next_lesson=next_lesson,
             progress=CabinetProgress(
@@ -143,12 +210,15 @@ class CabinetService:
         *,
         session: AsyncSession,
         user_id: int,
+        stream_id: int,
     ) -> set[int]:
         statement = (
             select(distinct(VideoView.video_id))
+            .join(VideoView.video)
             .where(
                 VideoView.user_id == user_id,
                 VideoView.watched_seconds >= MINIMUM_WATCH_SECONDS,
+                VideoView.video.has(stream_id=stream_id),
             )
         )
 

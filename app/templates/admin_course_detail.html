@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <a class="back-link" href="/admin/courses">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
+      <span>К курсам</span>
+    </a>
+
+    <h1>{{ course.title }}</h1>
+
+    {% if course.description %}
+    <p>{{ course.description }}</p>
+    {% else %}
+    <p>Описание курса не добавлено.</p>
+    {% endif %}
+  </div>
+
+  <a class="button button-secondary" href="/admin/courses/{{ course.id }}/edit">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      edit
+    </span>
+    <span>Редактировать курс</span>
+  </a>
+</div>
+
+<section class="admin-schedule-grid">
+  <article class="form-card admin-schedule-card">
+    <h2>Добавить поток</h2>
+
+    <form
+      method="post"
+      action="/admin/courses/{{ course.id }}/streams"
+      class="form"
+    >
+      <label for="stream-title">Название потока</label>
+      <input
+        id="stream-title"
+        name="title"
+        type="text"
+        maxlength="255"
+        placeholder="Осень 2026 · группа А"
+        required
+      >
+
+      <label for="stream-starts-on">Дата начала</label>
+      <input
+        id="stream-starts-on"
+        name="starts_on"
+        type="date"
+      >
+
+      <label for="stream-ends-on">Дата окончания</label>
+      <input
+        id="stream-ends-on"
+        name="ends_on"
+        type="date"
+      >
+
+      <label for="stream-timezone">Часовой пояс</label>
+      <input
+        id="stream-timezone"
+        name="timezone"
+        type="text"
+        maxlength="64"
+        value="Europe/Moscow"
+        required
+      >
+
+      <label for="stream-telemost-url">Ссылка на Telemost</label>
+      <input
+        id="stream-telemost-url"
+        name="telemost_url"
+        type="url"
+        placeholder="https://telemost.yandex.ru/..."
+      >
+
+      <label for="stream-status">Статус</label>
+      <select id="stream-status" name="stream_status">
+        {% for status in stream_statuses %}
+        <option value="{{ status.value }}"
+          {% if status.value == "draft" %}selected{% endif %}
+        >
+          {{ status.value }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          add
+        </span>
+        <span>Создать поток</span>
+      </button>
+    </form>
+  </article>
+
+  <article class="admin-info-card">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      info
+    </span>
+    <h2>Как работают потоки</h2>
+    <p>
+      Поток — это конкретный запуск курса. У него своё расписание,
+      Telemost, записи лекций и состав студентов.
+    </p>
+    <p>
+      Один студент может состоять только в одном потоке данного курса,
+      но может проходить несколько разных курсов.
+    </p>
+  </article>
+</section>
+
+<section class="admin-lessons-section">
+  <div class="admin-lessons-section__head">
+    <div>
+      <h2>Потоки курса</h2>
+      <p class="muted">Всего: {{ course.streams | length }}</p>
+    </div>
+  </div>
+
+  {% if course.streams %}
+  <div class="stream-list">
+    {% for stream in course.streams %}
+    <article class="stream-card">
+      <div class="stream-card__icon">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          groups
+        </span>
+      </div>
+
+      <div class="stream-card__content">
+        <div class="course-card__head">
+          <h3>{{ stream.title }}</h3>
+          <span class="status-chip
+            {% if stream.status == "active" %}status-chip--active{% endif %}
+          ">
+            {{ stream.status }}
+          </span>
+        </div>
+
+        <p class="muted">
+          {% if stream.starts_on %}
+          {{ stream.starts_on.strftime("%d.%m.%Y") }}
+          {% else %}
+          Дата начала не указана
+          {% endif %}
+          —
+          {% if stream.ends_on %}
+          {{ stream.ends_on.strftime("%d.%m.%Y") }}
+          {% else %}
+          без даты окончания
+          {% endif %}
+          · {{ stream.timezone }}
+        </p>
+
+        <a class="button button-secondary" href="/admin/streams/{{ stream.id }}">
+          <span class="material-symbols-outlined" aria-hidden="true">
+            arrow_forward
+          </span>
+          <span>Открыть поток</span>
+        </a>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="empty-state">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      groups
+    </span>
+    <h2>Потоков пока нет</h2>
+    <p>Добавьте первый поток через форму выше.</p>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

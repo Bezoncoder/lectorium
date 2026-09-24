@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user
-from app.db.models.user import User
+from app.db.models.user import User, UserRole
 from app.schemas.user import UserPydantic
 from app.schemas.video import VideoPydantic
 from app.schemas.video_view import VideoViewCreatePydantic
@@ -15,14 +15,29 @@ from app.services.video import VideoService
 router = APIRouter(tags=["videos"])
 
 
-@router.get("/videos", name="videos_list")
-async def videos_list(
+@router.get(
+    "/courses/{course_id}/videos",
+    name="course_videos_list",
+)
+async def course_videos_list(
+    course_id: int,
     request: Request,
     raw_current_user: Annotated[User, Depends(get_current_user)],
 ):
-    raw_videos = await VideoService.get_all()
-
     current_user = UserPydantic.model_validate(raw_current_user)
+
+    stream = await VideoService.get_stream_for_user_course(
+        user_id=current_user.id,
+        course_id=course_id,
+    )
+
+    if stream is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Нет доступа к видео этого курса",
+        )
+
+    raw_videos = await VideoService.get_all_for_stream(stream.id)
 
     videos = [
         VideoPydantic.model_validate(raw_video)
@@ -33,8 +48,10 @@ async def videos_list(
         request=request,
         name="videos_list.html",
         context={
-            "videos": videos,
             "current_user": current_user,
+            "course_id": course_id,
+            "stream": stream,
+            "videos": videos,
         },
     )
 
@@ -45,16 +62,49 @@ async def video_detail(
     request: Request,
     raw_current_user: Annotated[User, Depends(get_current_user)],
 ):
-    raw_video = await VideoService.get_by_id(video_id)
+    current_user = UserPydantic.model_validate(raw_current_user)
+
+    raw_video = await VideoService.get_by_id_for_user(
+        video_id=video_id,
+        user_id=current_user.id,
+    )
 
     if raw_video is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Видео не найдено",
+            detail="Видео не найдено или недоступно",
         )
 
-    current_user = UserPydantic.model_validate(raw_current_user)
     video = VideoPydantic.model_validate(raw_video)
+
+    view_stats = await VideoService.get_user_view_statistics(
+        video_id=video_id,
+        user_id=current_user.id,
+    )
+
+    if raw_current_user.role == UserRole.ADMIN:
+        back_url = f"/admin/streams/{video.stream_id}/videos"
+        back_label = "К видео потока"
+    else:
+        # У студента поток определяется сервером через его зачисление,
+        # но кнопка возвращает именно к расписанию выбранного курса.
+        stream = await VideoService.get_stream_for_user_course(
+            user_id=current_user.id,
+            course_id=(
+                raw_video.stream.course_id
+                if raw_video.stream is not None
+                else 0
+            ),
+        )
+
+        if stream is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Нет доступа к этому курсу",
+            )
+
+        back_url = f"/courses/{stream.course_id}"
+        back_label = "К расписанию курса"
 
     return request.app.state.templates.TemplateResponse(
         request=request,
@@ -62,6 +112,9 @@ async def video_detail(
         context={
             "video": video,
             "current_user": current_user,
+            "view_stats": view_stats,
+            "back_url": back_url,
+            "back_label": back_label,
         },
     )
 
@@ -69,14 +122,19 @@ async def video_detail(
 @router.get("/media/{video_id}", name="stream_video")
 async def stream_video(
     video_id: int,
-    _: Annotated[User, Depends(get_current_user)],
+    raw_current_user: Annotated[User, Depends(get_current_user)],
 ):
-    raw_video = await VideoService.get_by_id(video_id)
+    current_user = UserPydantic.model_validate(raw_current_user)
+
+    raw_video = await VideoService.get_by_id_for_user(
+        video_id=video_id,
+        user_id=current_user.id,
+    )
 
     if raw_video is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Видео не найдено",
+            detail="Видео не найдено или недоступно",
         )
 
     video = VideoPydantic.model_validate(raw_video)
@@ -107,16 +165,22 @@ async def register_video_view(
 ):
     current_user = UserPydantic.model_validate(raw_current_user)
 
-    registered = await VideoService.register_view(
+    result = await VideoService.register_view(
         video_id=video_id,
         user_id=current_user.id,
         watched_seconds=payload.watched_seconds,
     )
 
-    if not registered:
+    if result == "not_found":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Видео не найдено",
+        )
+
+    if result == "forbidden":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Нет доступа к этому видео",
         )
 
     return None

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.login }} — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <a class="back-link" href="/admin/students">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
+      <span>К поиску студентов</span>
+    </a>
+
+    <h1>{{ student.login }}</h1>
+    <p>
+      Студент создан {{ student.created_at.strftime("%d.%m.%Y %H:%M") }}
+    </p>
+  </div>
+</div>
+
+<section class="admin-schedule-grid">
+  <article class="form-card admin-schedule-card">
+    <h2>Сменить пароль</h2>
+
+    <form
+      method="post"
+      action="/admin/students/{{ student.id }}/password/form"
+      class="form"
+    >
+      <label for="new-password">Новый пароль</label>
+      <input
+        id="new-password"
+        name="password"
+        type="password"
+        minlength="8"
+        maxlength="72"
+        autocomplete="new-password"
+        required
+      >
+
+      <p class="muted">
+        После смены пароля все активные сессии студента будут завершены.
+      </p>
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          key
+        </span>
+        <span>Сменить пароль</span>
+      </button>
+    </form>
+  </article>
+
+  <article class="form-card admin-schedule-card">
+    <h2>Назначить курс</h2>
+
+    <form
+      method="post"
+      action="/admin/students/{{ student.id }}/enroll/form"
+      class="form"
+    >
+      <label for="course-id">Курс</label>
+      <select id="course-id" name="course_id" required>
+        <option value="">Выберите курс</option>
+        {% for course in courses %}
+        <option value="{{ course.id }}">
+          {{ course.title }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <label for="stream-id">Поток</label>
+      <input
+        id="stream-id"
+        name="stream_id"
+        type="number"
+        min="1"
+        placeholder="Необязательно"
+      >
+
+      <p class="muted">
+        Если ID потока не указан, студент будет назначен
+        в ближайший активный поток выбранного курса.
+      </p>
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          person_add
+        </span>
+        <span>Назначить</span>
+      </button>
+    </form>
+  </article>
+</section>
+
+<section class="admin-lessons-section">
+  <div class="admin-lessons-section__head">
+    <div>
+      <h2>Назначенные курсы</h2>
+      <p class="muted">Всего: {{ student.enrollments | length }}</p>
+    </div>
+  </div>
+
+  {% if student.enrollments %}
+  <div class="stream-list">
+    {% for enrollment in student.enrollments %}
+    <article class="stream-card">
+      <div class="stream-card__icon">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          school
+        </span>
+      </div>
+
+      <div class="stream-card__content">
+        <div class="course-card__head">
+          <h3>Курс #{{ enrollment.course_id }}</h3>
+          <span class="status-chip
+            {% if enrollment.status == "active" %}status-chip--active{% endif %}
+          ">
+            {{ enrollment.status }}
+          </span>
+        </div>
+
+        <p class="muted">
+          Поток ID: {{ enrollment.stream_id }}
+        </p>
+
+        <p class="muted">
+          Зачислен: {{ enrollment.enrolled_at.strftime("%d.%m.%Y %H:%M") }}
+        </p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="empty-state">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      school
+    </span>
+    <h2>Курсы ещё не назначены</h2>
+    <p>Назначьте студенту курс через форму выше.</p>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

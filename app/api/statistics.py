@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import require_admin
 from app.db.models.user import User
 from app.schemas.statistics import (
     VideoStatisticsPydantic,
@@ -21,7 +21,7 @@ router = APIRouter(
 @router.get("")
 async def statistics_index(
     request: Request,
-    raw_current_user: Annotated[User, Depends(get_current_user)],
+    raw_current_user: Annotated[User, Depends(require_admin)],
 ):
     raw_statistics = await StatisticsService.get_all()
 
@@ -46,7 +46,7 @@ async def statistics_index(
 async def statistics_detail(
     video_id: int,
     request: Request,
-    raw_current_user: Annotated[User, Depends(get_current_user)],
+    raw_current_user: Annotated[User, Depends(require_admin)],
 ):
     raw_video = await VideoService.get_by_id(video_id)
 

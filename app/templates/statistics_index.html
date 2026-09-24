@@ -4,8 +4,10 @@
 
 {% block content %}
 <div class="page-heading">
-  <h1>Статистика просмотров</h1>
-
+  <div>
+    <h1>Статистика просмотров</h1>
+    <p>Данные по всем видео, курсам и потокам.</p>
+  </div>
 </div>
 
 {% if statistics %}
@@ -13,17 +15,20 @@
   <table>
     <thead>
       <tr>
+        <th>Курс</th>
+        <th>Поток</th>
         <th>Видео</th>
         <th>Просмотры</th>
         <th>Уникальные зрители</th>
         <th>Последний просмотр</th>
         <th>Детали</th>
       </tr>
-
     </thead>
     <tbody>
       {% for item in statistics %}
       <tr>
+        <td>{{ item.course_title }}</td>
+        <td>{{ item.stream_title }}</td>
         <td>{{ item.title }}</td>
         <td>{{ item.total_views }}</td>
         <td>{{ item.unique_viewers }}</td>
@@ -47,10 +52,17 @@
     </tbody>
   </table>
 </div>
- <p class="muted">
-      Учитываются просмотры более 15 секунд.
-    </p>
+
+<p class="muted">
+  Учитываются просмотры длительностью не менее 15 секунд.
+</p>
 {% else %}
-<p>Видео пока не добавлены.</p>
+<section class="empty-state">
+  <span class="material-symbols-outlined" aria-hidden="true">
+    monitoring
+  </span>
+  <h2>Видео пока не добавлены</h2>
+  <p>Статистика появится после загрузки записей в потоки.</p>
+</section>
 {% endif %}
 {% endblock %}

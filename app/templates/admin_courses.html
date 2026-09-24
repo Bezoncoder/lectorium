@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Курсы — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Курсы</h1>
+    <p>Создавайте программы обучения и управляйте их потоками.</p>
+  </div>
+
+  <a class="button" href="/admin/courses/new">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      add
+    </span>
+    <span>Создать курс</span>
+  </a>
+</div>
+
+{% if courses %}
+<section class="course-grid">
+  {% for course in courses %}
+  <article class="course-card">
+    <div class="course-card__icon">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        school
+      </span>
+    </div>
+
+    <div class="course-card__content">
+      <div class="course-card__head">
+        <h2>{{ course.title }}</h2>
+
+        {% if course.is_active %}
+        <span class="status-chip status-chip--active">Активен</span>
+        {% else %}
+        <span class="status-chip">Скрыт</span>
+        {% endif %}
+      </div>
+
+      {% if course.description %}
+      <p>{{ course.description }}</p>
+      {% else %}
+      <p class="muted">Описание не добавлено.</p>
+      {% endif %}
+
+      <p class="muted">Потоков: {{ course.streams | length }}</p>
+
+      <a class="button button-secondary" href="/admin/courses/{{ course.id }}">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          settings
+        </span>
+        <span>Открыть</span>
+      </a>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<section class="empty-state">
+  <span class="material-symbols-outlined" aria-hidden="true">
+    school
+  </span>
+  <h2>Курсов пока нет</h2>
+  <p>Создайте первый курс и добавьте в него поток.</p>
+  <a class="button" href="/admin/courses/new">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      add
+    </span>
+    <span>Создать курс</span>
+  </a>
+</section>
+{% endif %}
+{% endblock %}

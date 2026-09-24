@@ -1,15 +1,29 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
+if TYPE_CHECKING:
+    from app.db.models.stream import Stream
+    from app.db.models.user import User
+    from app.db.models.video_view import VideoView
+
 
 class Video(Base):
     __tablename__ = "videos"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+
+    stream_id: Mapped[int] = mapped_column(
+        ForeignKey("streams.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     title: Mapped[str] = mapped_column(
         String(255),
@@ -50,28 +64,29 @@ class Video(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
     )
 
+    stream: Mapped["Stream"] = relationship(
+        back_populates="videos",
+    )
+
     uploaded_by: Mapped["User"] = relationship(
-        "User",
         back_populates="uploaded_videos",
         lazy="joined",
     )
 
     views: Mapped[list["VideoView"]] = relationship(
-        "VideoView",
         back_populates="video",
-        uselist=True,
         lazy="selectin",
         cascade="all, delete-orphan",
     )

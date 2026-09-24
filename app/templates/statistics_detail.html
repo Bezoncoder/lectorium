@@ -6,7 +6,7 @@
 <div class="page-heading">
   <div>
     <h1>Зрители: {{ video.title }}</h1>
-
+    <p>Статистика просмотров этой записи.</p>
   </div>
 
   <a class="button button-secondary" href="/statistics">
@@ -40,6 +40,12 @@
   </table>
 </div>
 {% else %}
-<p>У этого видео пока нет засчитанных просмотров.</p>
+<section class="empty-state">
+  <span class="material-symbols-outlined" aria-hidden="true">
+    visibility_off
+  </span>
+  <h2>У записи пока нет просмотров</h2>
+  <p>Данные появятся после того, как студенты посмотрят видео не менее 15 секунд.</p>
+</section>
 {% endif %}
 {% endblock %}

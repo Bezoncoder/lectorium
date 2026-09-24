@@ -1,11 +1,12 @@
 import asyncio
-from datetime import datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 
 from app.db.models.course import Course
 from app.db.models.schedule_lesson import ScheduleLesson
+from app.db.models.stream import Stream, StreamStatus
 from app.db.session import async_session_maker
 
 
@@ -13,9 +14,20 @@ MOSCOW_TZ = ZoneInfo("Europe/Moscow")
 
 BOOTCAMP_COURSE = {
     "title": "BootCamp",
-    "dates": "01.09.2026 — 29.10.2026",
-    "timezone": "МСК",
+    "description": (
+        "Практический курс по Python API, GitHub, S3, Spark "
+        "и ClickHouse."
+    ),
+    "is_active": True,
+}
+
+BOOTCAMP_STREAM = {
+    "title": "Осень 2026",
+    "starts_on": date(2026, 9, 1),
+    "ends_on": date(2026, 10, 29),
+    "timezone": "Europe/Moscow",
     "telemost_url": None,
+    "status": StreamStatus.ACTIVE,
 }
 
 BOOTCAMP_LESSONS = (
@@ -29,7 +41,7 @@ BOOTCAMP_LESSONS = (
     ),
     (
         "2026-09-08 20:00",
-        "#1.2 Github",
+        "#1.2 GitHub",
     ),
     (
         "2026-09-10 20:00",
@@ -58,15 +70,12 @@ async def init_bootcamp() -> None:
         try:
             course_result = await session.execute(
                 select(Course)
-                .order_by(Course.id.asc())
-                .limit(1)
+                .where(Course.title == BOOTCAMP_COURSE["title"])
             )
-
             course = course_result.scalar_one_or_none()
 
             if course is None:
                 course = Course(**BOOTCAMP_COURSE)
-
                 session.add(course)
                 await session.flush()
 
@@ -80,9 +89,36 @@ async def init_bootcamp() -> None:
                     f"(id={course.id})"
                 )
 
+            stream_result = await session.execute(
+                select(Stream)
+                .where(
+                    Stream.course_id == course.id,
+                    Stream.title == BOOTCAMP_STREAM["title"],
+                )
+            )
+            stream = stream_result.scalar_one_or_none()
+
+            if stream is None:
+                stream = Stream(
+                    course_id=course.id,
+                    **BOOTCAMP_STREAM,
+                )
+                session.add(stream)
+                await session.flush()
+
+                print(
+                    f"Создан поток: {stream.title} "
+                    f"(id={stream.id})"
+                )
+            else:
+                print(
+                    f"Поток уже существует: {stream.title} "
+                    f"(id={stream.id})"
+                )
+
             lessons_result = await session.execute(
                 select(ScheduleLesson.id)
-                .where(ScheduleLesson.course_id == course.id)
+                .where(ScheduleLesson.stream_id == stream.id)
                 .limit(1)
             )
 
@@ -90,7 +126,7 @@ async def init_bootcamp() -> None:
 
             if first_lesson_id is not None:
                 print(
-                    "Расписание уже заполнено. "
+                    "Расписание потока уже заполнено. "
                     "Новые занятия не добавлены."
                 )
                 await session.commit()
@@ -98,7 +134,7 @@ async def init_bootcamp() -> None:
 
             lessons = [
                 ScheduleLesson(
-                    course_id=course.id,
+                    stream_id=stream.id,
                     starts_at=parse_moscow_datetime(starts_at),
                     title=title,
                     sort_order=position,
@@ -113,7 +149,8 @@ async def init_bootcamp() -> None:
             await session.commit()
 
             print(
-                f"Создано занятий в расписании: {len(lessons)}"
+                "Создано занятий в расписании потока: "
+                f"{len(lessons)}"
             )
 
         except Exception:
@@ -122,4 +159,8 @@ async def init_bootcamp() -> None:
 
 
 if __name__ == "__main__":
+
+    # alembic upgrade head
+    # uvicorn app.main:app --reload
+
     asyncio.run(init_bootcamp())

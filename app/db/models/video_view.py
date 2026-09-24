@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Date,
@@ -11,6 +14,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+
+if TYPE_CHECKING:
+    from app.db.models.user import User
+    from app.db.models.video import Video
 
 
 class VideoView(Base):
@@ -42,7 +49,7 @@ class VideoView(Base):
     watched_seconds: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        default=30,
+        default=15,
     )
 
     view_date: Mapped[date] = mapped_column(
@@ -52,20 +59,18 @@ class VideoView(Base):
     )
 
     viewed_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
         index=True,
     )
 
     user: Mapped["User"] = relationship(
-        "User",
         back_populates="video_views",
         lazy="joined",
     )
 
     video: Mapped["Video"] = relationship(
-        "Video",
         back_populates="views",
         lazy="joined",
     )

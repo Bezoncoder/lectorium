@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 if TYPE_CHECKING:
-    from app.db.models.course import Course
+    from app.db.models.stream import Stream
     from app.db.models.video import Video
 
 
@@ -18,8 +18,8 @@ class ScheduleLesson(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    course_id: Mapped[int] = mapped_column(
-        ForeignKey("courses.id", ondelete="CASCADE"),
+    stream_id: Mapped[int] = mapped_column(
+        ForeignKey("streams.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -61,7 +61,7 @@ class ScheduleLesson(Base):
         onupdate=func.now(),
     )
 
-    course: Mapped["Course"] = relationship(
+    stream: Mapped["Stream"] = relationship(
         back_populates="lessons",
     )
 

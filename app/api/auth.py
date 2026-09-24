@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Form, HTTPException, Request, status
+from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import RedirectResponse
 
 from app.core.config import settings
-from app.schemas.user import AddUserPydantic, UserPydantic
+from app.schemas.user import UserPydantic
 from app.services.auth import SessionService, UserService
 
 router = APIRouter(tags=["auth"])
@@ -64,28 +64,6 @@ async def login(
     )
 
     return response
-
-
-@router.post(
-    "/add_user",
-    response_model=UserPydantic,
-    status_code=status.HTTP_201_CREATED,
-)
-async def add_user(
-    user_data: AddUserPydantic,
-) -> UserPydantic:
-    raw_student = await UserService.create_student(
-        login=user_data.login,
-        password=user_data.password,
-    )
-
-    if raw_student is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Пользователь с таким логином уже существует",
-        )
-
-    return UserPydantic.model_validate(raw_student)
 
 
 @router.post("/logout")

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading cabinet-heading">
+  <div>
+    <a class="back-link" href="/">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
+      <span>К моим курсам</span>
+    </a>
+
+    <h1>{{ course.title }}</h1>
+
+    <p>
+      {{ stream.title }}
+      {% if stream.starts_on or stream.ends_on %}
+      ·
+      {% if stream.starts_on %}
+      {{ stream.starts_on.strftime("%d.%m.%Y") }}
+      {% endif %}
+      {% if stream.starts_on and stream.ends_on %} — {% endif %}
+      {% if stream.ends_on %}
+      {{ stream.ends_on.strftime("%d.%m.%Y") }}
+      {% endif %}
+      {% endif %}
+      · {{ stream.timezone }}
+    </p>
+  </div>
+
+  {% if stream.telemost_url %}
+  <a
+    class="button button-secondary"
+    href="{{ stream.telemost_url }}"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    <span class="material-symbols-outlined" aria-hidden="true">
+      videocam
+    </span>
+    <span>Открыть Telemost</span>
+  </a>
+  {% endif %}
+</div>
+
+<section class="cabinet-grid">
+  <article class="cabinet-card cabinet-progress-card">
+    <div class="cabinet-card__head">
+      <div>
+        <p class="cabinet-label">Твой прогресс</p>
+        <h2>{{ progress.percent }}%</h2>
+      </div>
+
+      <span
+        class="material-symbols-outlined cabinet-card__icon"
+        aria-hidden="true"
+      >
+        school
+      </span>
+    </div>
+
+    <div
+      class="cabinet-progress-bar"
+      role="progressbar"
+      aria-label="Прогресс курса"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="{{ progress.percent }}"
+    >
+      <span style="width: {{ progress.percent }}%"></span>
+    </div>
+
+    <div class="cabinet-progress-meta">
+      <span>
+        Просмотрено: {{ progress.completed }} из {{ progress.total }}
+      </span>
+      <span>Осталось: {{ progress.remaining }}</span>
+    </div>
+
+    <a
+      class="button button-secondary cabinet-card__link"
+      href="/courses/{{ course.id }}/videos"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">
+        video_library
+      </span>
+      <span>Все записи</span>
+    </a>
+  </article>
+
+  <article class="cabinet-card cabinet-next-card">
+    <div class="cabinet-card__head">
+      <div>
+        <p class="cabinet-label">Ближайшая лекция</p>
+
+        {% if next_lesson %}
+        <h2>{{ next_lesson.title }}</h2>
+        <p class="muted">
+          {{ next_lesson.date_label }} · {{ next_lesson.time_label }}
+        </p>
+        {% else %}
+        <h2>Новых занятий нет</h2>
+        <p class="muted">
+          Расписание завершено или администратор ещё не добавил лекции.
+        </p>
+        {% endif %}
+      </div>
+
+      <span
+        class="material-symbols-outlined cabinet-card__icon"
+        aria-hidden="true"
+      >
+        calendar_month
+      </span>
+    </div>
+  </article>
+</section>
+
+<section class="cabinet-schedule">
+  <div class="cabinet-schedule__head">
+    <div>
+      <h2>Расписание лекций</h2>
+      <p class="muted">
+        Записи лекций появляются по мере добавления администратором.
+      </p>
+    </div>
+
+    <a
+      class="button button-secondary"
+      href="/courses/{{ course.id }}/videos"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">
+        video_library
+      </span>
+      <span>Видео курса</span>
+    </a>
+  </div>
+
+  {% if lessons %}
+  <div class="schedule-list">
+    {% for lesson in lessons %}
+    <article class="schedule-lesson schedule-lesson--{{ lesson.status }}">
+      <div class="schedule-lesson__date">
+        <strong>{{ lesson.date_day }}</strong>
+        <span>{{ lesson.date_month }}</span>
+        <small>{{ lesson.time_label }}</small>
+      </div>
+
+      <div class="schedule-lesson__body">
+        <div>
+          <p class="schedule-lesson__counter">
+            Лекция {{ loop.index }}
+          </p>
+
+          <h3>{{ lesson.title }}</h3>
+
+          {% if lesson.status == "completed" %}
+          <p class="muted">Лекция просмотрена.</p>
+          {% elif lesson.status == "available" %}
+          <p class="muted">Запись лекции доступна для просмотра.</p>
+          {% elif lesson.status == "upcoming" %}
+          <p class="muted">
+            Занятие состоится {{ lesson.date_label }}.
+          </p>
+          {% else %}
+          <p class="muted">
+            Запись появится после проведения занятия.
+          </p>
+          {% endif %}
+        </div>
+
+        <div class="schedule-lesson__action">
+          {% if lesson.status == "completed" %}
+          <a
+            class="button button-secondary"
+            href="/videos/{{ lesson.video_id }}"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">
+              replay
+            </span>
+            <span>Открыть снова</span>
+          </a>
+
+          {% elif lesson.status == "available" %}
+          <a class="button" href="/videos/{{ lesson.video_id }}">
+            <span class="material-symbols-outlined" aria-hidden="true">
+              play_circle
+            </span>
+            <span>Смотреть запись</span>
+          </a>
+
+          {% elif lesson.status == "upcoming" and stream.telemost_url %}
+          <a
+            class="button button-secondary"
+            href="{{ stream.telemost_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">
+              videocam
+            </span>
+            <span>На встречу</span>
+          </a>
+
+          {% else %}
+          <span class="schedule-status">Скоро</span>
+          {% endif %}
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="empty-state">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      calendar_month
+    </span>
+    <h2>Расписание пока пустое</h2>
+    <p>Администратор ещё не добавил занятия в этот поток.</p>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

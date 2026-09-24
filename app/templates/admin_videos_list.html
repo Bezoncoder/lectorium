@@ -1,13 +1,26 @@
 {% extends "base.html" %}
 
-{% block title %}Администрирование — Lectorium{% endblock %}
+{% block title %}Видео потока — Lectorium{% endblock %}
 
 {% block content %}
 <div class="page-heading">
-  <h1>Управление видео</h1>
+  <div>
+    <a class="back-link" href="/admin/streams/{{ stream.id }}">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
+      <span>К потоку</span>
+    </a>
 
-  <a class="button" href="/admin/videos/new">
-    Добавить видео
+    <h1>Видео потока</h1>
+    <p>{{ stream.course.title }} · {{ stream.title }}</p>
+  </div>
+
+  <a class="button" href="/admin/streams/{{ stream.id }}/videos/new">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      add
+    </span>
+    <span>Добавить видео</span>
   </a>
 </div>
 
@@ -32,15 +45,22 @@
         <td>{{ "%.2f"|format(video.size_bytes / 1024 / 1024) }} MB</td>
         <td class="actions">
           <a
+            class="button"
+            href="/videos/{{ video.id }}"
+          >
+            Смотреть
+          </a>
+
+          <a
             class="button button-secondary"
-            href="/admin/videos/{{ video.id }}/edit"
+            href="/admin/streams/{{ stream.id }}/videos/{{ video.id }}/edit"
           >
             Изменить
           </a>
 
           <form
             method="post"
-            action="/admin/videos/{{ video.id }}/delete"
+            action="/admin/streams/{{ stream.id }}/videos/{{ video.id }}/delete"
             onsubmit="return confirm('Удалить видео без возможности восстановления?');"
           >
             <button class="button button-danger" type="submit">
@@ -54,6 +74,18 @@
   </table>
 </div>
 {% else %}
-<p>В системе пока нет видео.</p>
+<section class="empty-state">
+  <span class="material-symbols-outlined" aria-hidden="true">
+    video_library
+  </span>
+  <h2>В этом потоке пока нет видео</h2>
+  <p>Загрузите запись, после чего её можно будет связать с занятием.</p>
+  <a class="button" href="/admin/streams/{{ stream.id }}/videos/new">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      add
+    </span>
+    <span>Добавить видео</span>
+  </a>
+</section>
 {% endif %}
 {% endblock %}

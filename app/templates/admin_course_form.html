@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% if course %}
+  {% set page_title = "Редактирование курса" %}
+  {% set form_action = "/admin/courses/" ~ course.id %}
+{% else %}
+  {% set page_title = "Новый курс" %}
+  {% set form_action = "/admin/courses" %}
+{% endif %}
+
+{% block title %}{{ page_title }} — Lectorium{% endblock %}
+
+{% block content %}
+<section class="form-card">
+  <div class="page-heading">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>Курс — это программа обучения. Даты и расписание задаются в потоке.</p>
+    </div>
+
+    <a
+      class="button button-secondary"
+      href="{{ '/admin/courses/' ~ course.id if course else '/admin/courses' }}"
+    >
+      Назад
+    </a>
+  </div>
+
+  <form method="post" action="{{ form_action }}" class="form">
+    <label for="title">Название курса</label>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      maxlength="255"
+      value="{{ course.title if course else '' }}"
+      placeholder="Python Backend"
+      required
+    >
+
+    <label for="description">Описание</label>
+    <textarea
+      id="description"
+      name="description"
+      rows="7"
+      placeholder="Краткое описание программы обучения"
+    >{{ course.description if course and course.description else '' }}</textarea>
+
+    <input
+      name="is_active"
+      type="hidden"
+      value="false"
+    >
+
+    <label class="checkbox-row" for="is-active">
+      <input
+        id="is-active"
+        name="is_active"
+        type="checkbox"
+        value="true"
+        {% if not course or course.is_active %}checked{% endif %}
+      >
+      <span>Курс доступен для новых зачислений</span>
+    </label>
+
+    <button class="button" type="submit">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        save
+      </span>
+      <span>{% if course %}Сохранить{% else %}Создать курс{% endif %}</span>
+    </button>
+  </form>
+</section>
+{% endblock %}

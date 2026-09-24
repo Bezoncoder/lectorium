@@ -1,22 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Видео — Lectorium{% endblock %}
+{% block title %}Видео — {{ stream.course.title }}{% endblock %}
 
 {% block content %}
 <div class="page-heading">
   <div>
-    <h1>Учебные видео</h1>
-    <p>Выберите материал из списка или откройте карточку видео.</p>
-  </div>
+    <a class="back-link" href="/courses/{{ course_id }}">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
+      <span>К курсу</span>
+    </a>
 
-  {% if current_user and current_user.role == "admin" %}
-  <a class="button" href="/admin/videos/new">
-    <span class="material-symbols-outlined" aria-hidden="true">
-      add
-    </span>
-    <span>Добавить видео</span>
-  </a>
-  {% endif %}
+    <h1>Видео курса</h1>
+    <p>{{ stream.course.title }} · {{ stream.title }}</p>
+  </div>
 </div>
 
 {% if videos %}
@@ -52,23 +50,7 @@
             class="videos-sidebar__date"
             datetime="{{ video.created_at.isoformat() }}"
           >
-            {{ video.created_at.strftime("%d") }}
-            {{
-              {
-                1: "января",
-                2: "февраля",
-                3: "марта",
-                4: "апреля",
-                5: "мая",
-                6: "июня",
-                7: "июля",
-                8: "августа",
-                9: "сентября",
-                10: "октября",
-                11: "ноября",
-                12: "декабря"
-              }[video.created_at.month]
-            }}
+            {{ video.created_at.strftime("%d.%m.%Y") }}
           </time>
         </span>
       </a>
@@ -107,19 +89,12 @@
   </section>
 </div>
 {% else %}
-<section class="empty-state" aria-labelledby="empty-videos-title">
+<section class="empty-state">
   <span class="material-symbols-outlined" aria-hidden="true">
     video_library
   </span>
-  <h2 id="empty-videos-title">Видео пока не добавлены</h2>
-  <p>Когда преподаватель загрузит материалы, они появятся здесь.</p>
-
-  {% if current_user and current_user.role == "admin" %}
-  <a class="button" href="/admin/videos/new">
-    <span class="material-symbols-outlined" aria-hidden="true">add</span>
-    <span>Добавить первое видео</span>
-  </a>
-  {% endif %}
+  <h2>Записи пока не добавлены</h2>
+  <p>Когда преподаватель загрузит материалы этого потока, они появятся здесь.</p>
 </section>
 {% endif %}
 {% endblock %}

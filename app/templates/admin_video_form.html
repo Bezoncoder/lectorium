@@ -2,10 +2,10 @@
 
 {% if video %}
   {% set page_title = "Редактирование видео" %}
-  {% set form_action = "/admin/videos/" ~ video.id %}
+  {% set form_action = "/admin/streams/" ~ stream.id ~ "/videos/" ~ video.id %}
 {% else %}
   {% set page_title = "Новое видео" %}
-  {% set form_action = "/admin/videos" %}
+  {% set form_action = "/admin/streams/" ~ stream.id ~ "/videos" %}
 {% endif %}
 
 {% block title %}{{ page_title }} — Lectorium{% endblock %}
@@ -13,9 +13,15 @@
 {% block content %}
 <section class="form-card">
   <div class="page-heading">
-    <h1>{{ page_title }}</h1>
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ stream.course.title }} · {{ stream.title }}</p>
+    </div>
 
-    <a class="button button-secondary" href="/admin/videos">
+    <a
+      class="button button-secondary"
+      href="/admin/streams/{{ stream.id }}/videos"
+    >
       Назад
     </a>
   </div>

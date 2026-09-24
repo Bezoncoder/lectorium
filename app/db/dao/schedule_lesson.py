@@ -12,15 +12,18 @@ class ScheduleLessonDAO(BaseDAO[ScheduleLesson]):
     model = ScheduleLesson
 
     @classmethod
-    async def get_by_course_id(
+    async def get_by_stream_id(
         cls,
         session: AsyncSession,
-        course_id: int,
+        stream_id: int,
     ) -> Sequence[ScheduleLesson]:
         statement = (
             select(ScheduleLesson)
-            .where(ScheduleLesson.course_id == course_id)
-            .options(selectinload(ScheduleLesson.video))
+            .where(ScheduleLesson.stream_id == stream_id)
+            .options(
+                selectinload(ScheduleLesson.video),
+                selectinload(ScheduleLesson.stream),
+            )
             .order_by(
                 ScheduleLesson.starts_at.asc(),
                 ScheduleLesson.sort_order.asc(),
@@ -41,7 +44,10 @@ class ScheduleLessonDAO(BaseDAO[ScheduleLesson]):
         statement = (
             select(ScheduleLesson)
             .where(ScheduleLesson.id == lesson_id)
-            .options(selectinload(ScheduleLesson.video))
+            .options(
+                selectinload(ScheduleLesson.video),
+                selectinload(ScheduleLesson.stream),
+            )
         )
 
         result = await session.execute(statement)
@@ -49,14 +55,14 @@ class ScheduleLessonDAO(BaseDAO[ScheduleLesson]):
         return result.unique().scalar_one_or_none()
 
     @classmethod
-    async def clear_by_course_id(
+    async def clear_by_stream_id(
         cls,
         session: AsyncSession,
-        course_id: int,
+        stream_id: int,
     ) -> None:
         try:
             statement = delete(ScheduleLesson).where(
-                ScheduleLesson.course_id == course_id
+                ScheduleLesson.stream_id == stream_id
             )
 
             await session.execute(statement)

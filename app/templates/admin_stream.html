@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}{{ stream.title }} — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <a class="back-link" href="/admin/courses/{{ stream.course_id }}">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
+      <span>К курсу {{ stream.course.title }}</span>
+    </a>
+
+    <h1>{{ stream.title }}</h1>
+    <p>{{ stream.course.title }} · Управление потоком</p>
+  </div>
+
+  <a class="button button-secondary" href="/admin/streams/{{ stream.id }}/videos">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      video_library
+    </span>
+    <span>Видео потока</span>
+  </a>
+</div>
+
+<section class="admin-schedule-grid">
+  <article class="form-card admin-schedule-card">
+    <h2>Настройки потока</h2>
+
+    <form method="post" action="/admin/streams/{{ stream.id }}" class="form">
+      <label for="stream-title">Название потока</label>
+      <input
+        id="stream-title"
+        name="title"
+        type="text"
+        maxlength="255"
+        value="{{ stream.title }}"
+        required
+      >
+
+      <label for="stream-starts-on">Дата начала</label>
+      <input
+        id="stream-starts-on"
+        name="starts_on"
+        type="date"
+        value="{{ stream.starts_on.isoformat() if stream.starts_on else '' }}"
+      >
+
+      <label for="stream-ends-on">Дата окончания</label>
+      <input
+        id="stream-ends-on"
+        name="ends_on"
+        type="date"
+        value="{{ stream.ends_on.isoformat() if stream.ends_on else '' }}"
+      >
+
+      <label for="stream-timezone">Часовой пояс</label>
+      <input
+        id="stream-timezone"
+        name="timezone"
+        type="text"
+        maxlength="64"
+        value="{{ stream.timezone }}"
+        required
+      >
+
+      <label for="stream-telemost-url">Ссылка на Telemost</label>
+      <input
+        id="stream-telemost-url"
+        name="telemost_url"
+        type="url"
+        value="{{ stream.telemost_url or '' }}"
+        placeholder="https://telemost.yandex.ru/..."
+      >
+
+      <label for="stream-status">Статус</label>
+      <select id="stream-status" name="stream_status">
+        {% for status in stream_statuses %}
+        <option
+          value="{{ status.value }}"
+          {% if stream.status == status.value %}selected{% endif %}
+        >
+          {{ status.value }}
+        </option>
+        {% endfor %}
+      </select>
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          save
+        </span>
+        <span>Сохранить поток</span>
+      </button>
+    </form>
+  </article>
+
+  <article class="form-card admin-schedule-card">
+    <h2>Добавить занятие</h2>
+
+    <form
+      method="post"
+      action="/admin/streams/{{ stream.id }}/lessons"
+      class="form"
+    >
+      <label for="lesson-title">Название лекции</label>
+      <input
+        id="lesson-title"
+        name="title"
+        type="text"
+        maxlength="500"
+        placeholder="#7 Airflow"
+        required
+      >
+
+      <label for="lesson-starts-at">Дата и время</label>
+      <input
+        id="lesson-starts-at"
+        name="starts_at"
+        type="datetime-local"
+        required
+      >
+
+      <label for="lesson-video">Запись видео</label>
+      <select id="lesson-video" name="video_id">
+        <option value="">Запись будет добавлена позже</option>
+
+        {% for video in videos %}
+        <option value="{{ video.id }}">{{ video.title }}</option>
+        {% endfor %}
+      </select>
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          add
+        </span>
+        <span>Добавить лекцию</span>
+      </button>
+    </form>
+  </article>
+</section>
+
+<section class="admin-lessons-section">
+  <div class="admin-lessons-section__head">
+    <div>
+      <h2>Занятия в расписании</h2>
+      <p class="muted">Всего: {{ lessons | length }}</p>
+    </div>
+
+    {% if lessons %}
+    <form method="post" action="/admin/streams/{{ stream.id }}/schedule/clear">
+      <button
+        class="button button-danger"
+        type="submit"
+        onclick="return confirm('Удалить все занятия из расписания? Видеофайлы не будут удалены.')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          delete_sweep
+        </span>
+        <span>Очистить расписание</span>
+      </button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if lessons %}
+  <div class="admin-lessons-list">
+    {% for lesson in lessons %}
+    <article class="admin-lesson-card">
+      <form
+        method="post"
+        action="/admin/streams/{{ stream.id }}/lessons/{{ lesson.id }}"
+        class="form"
+      >
+        <div class="admin-lesson-card__head">
+          <h3>Лекция {{ loop.index }}</h3>
+          <input
+            name="sort_order"
+            type="hidden"
+            value="{{ lesson.sort_order }}"
+          >
+        </div>
+
+        <label for="lesson-title-{{ lesson.id }}">Название</label>
+        <input
+          id="lesson-title-{{ lesson.id }}"
+          name="title"
+          type="text"
+          maxlength="500"
+          value="{{ lesson.title }}"
+          required
+        >
+
+        <label for="lesson-start-{{ lesson.id }}">Дата и время</label>
+        <input
+          id="lesson-start-{{ lesson.id }}"
+          name="starts_at"
+          type="datetime-local"
+          value="{{ lesson.starts_at.strftime('%Y-%m-%dT%H:%M') }}"
+          required
+        >
+
+        <label for="lesson-video-{{ lesson.id }}">Запись видео</label>
+        <select id="lesson-video-{{ lesson.id }}" name="video_id">
+          <option value="">Запись ещё не добавлена</option>
+
+          {% for video in videos %}
+          <option
+            value="{{ video.id }}"
+            {% if lesson.video_id == video.id %}selected{% endif %}
+          >
+            {{ video.title }}
+          </option>
+          {% endfor %}
+        </select>
+
+        <div class="admin-lesson-card__actions">
+          <button class="button" type="submit">
+            <span class="material-symbols-outlined" aria-hidden="true">
+              save
+            </span>
+            <span>Сохранить</span>
+          </button>
+        </div>
+      </form>
+
+      <form
+        method="post"
+        action="/admin/streams/{{ stream.id }}/lessons/{{ lesson.id }}/delete"
+        class="admin-lesson-card__delete"
+      >
+        <button
+          class="button button-danger"
+          type="submit"
+          onclick="return confirm('Удалить это занятие из расписания?')"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            delete
+          </span>
+          <span>Удалить</span>
+        </button>
+      </form>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="empty-state">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      event_busy
+    </span>
+    <h2>Расписание пустое</h2>
+    <p>Добавьте первое занятие через форму выше.</p>
+  </section>
+  {% endif %}
+</section>
+{% endblock %}

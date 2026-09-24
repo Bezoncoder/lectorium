@@ -4,6 +4,10 @@ from pydantic import Field, field_validator
 
 from app.db.models.user import UserRole
 from app.schemas.base import BasePydantic
+from app.schemas.stream_enrollment import StreamEnrollmentPydantic
+from app.schemas.user_session import UserSessionPydantic
+from app.schemas.video import VideoPydantic
+from app.schemas.video_view import VideoViewPydantic
 
 
 class UserPydantic(BasePydantic):
@@ -15,15 +19,19 @@ class UserPydantic(BasePydantic):
 
 
 class UserWithRelationsPydantic(UserPydantic):
-    sessions: list["UserSessionPydantic"] = Field(
+    sessions: list[UserSessionPydantic] = Field(
         default_factory=list,
     )
 
-    uploaded_videos: list["VideoPydantic"] = Field(
+    uploaded_videos: list[VideoPydantic] = Field(
         default_factory=list,
     )
 
-    video_views: list["VideoViewPydantic"] = Field(
+    video_views: list[VideoViewPydantic] = Field(
+        default_factory=list,
+    )
+
+    enrollments: list[StreamEnrollmentPydantic] = Field(
         default_factory=list,
     )
 
@@ -57,3 +65,17 @@ class AddUserPydantic(BasePydantic):
             )
 
         return value
+
+
+class AdminCreateStudentPydantic(AddUserPydantic):
+    course_id: int = Field(gt=0)
+    stream_id: int | None = Field(default=None, gt=0)
+
+
+class AdminEnrollStudentPydantic(BasePydantic):
+    course_id: int = Field(gt=0)
+    stream_id: int | None = Field(default=None, gt=0)
+
+
+class AdminChangeStudentPasswordPydantic(BasePydantic):
+    password: str = Field(min_length=8, max_length=72)

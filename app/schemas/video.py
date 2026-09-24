@@ -7,6 +7,7 @@ from app.schemas.base import BasePydantic
 
 class VideoPydantic(BasePydantic):
     id: int
+    stream_id: int
     title: str
     description: str | None
     filename: str
@@ -19,6 +20,7 @@ class VideoPydantic(BasePydantic):
 
 
 class VideoCreatePydantic(BasePydantic):
+    stream_id: int = Field(gt=0)
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=10_000)
 

@@ -13,8 +13,11 @@
       {% endif %}
     </div>
 
-    <a class="button button-secondary" href="/videos">
-      К каталогу
+    <a class="button button-secondary" href="{{ back_url }}">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        arrow_back
+      </span>
+      <span>{{ back_label }}</span>
     </a>
   </div>
 
@@ -31,7 +34,35 @@
     Ваш браузер не поддерживает HTML5-видео.
   </video>
 
+  <section class="video-view-stats" aria-label="Мои просмотры">
+    <span
+      class="material-symbols-outlined video-view-stats__icon"
+      aria-hidden="true"
+    >
+      visibility
+    </span>
 
+    <div>
+      <h2>Мои просмотры</h2>
+
+      {% if view_stats.views_count %}
+      <p>
+        Засчитанных просмотров: <strong>{{ view_stats.views_count }}</strong>
+      </p>
+
+      {% if view_stats.last_viewed_at %}
+      <p class="muted">
+        Последний просмотр:
+        {{ view_stats.last_viewed_at.strftime("%d.%m.%Y %H:%M") }}
+      </p>
+      {% endif %}
+      {% else %}
+      <p>
+        Запись будет засчитана после 15 секунд просмотра.
+      </p>
+      {% endif %}
+    </div>
+  </section>
 </article>
 
 <script>
@@ -45,20 +76,24 @@
 
     viewRegistered = true;
 
-    const response = await fetch(
-      "/videos/{{ video.id }}/view",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          watched_seconds: Math.floor(player.currentTime)
-        })
-      }
-    );
+    try {
+      const response = await fetch(
+        "/videos/{{ video.id }}/view",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            watched_seconds: Math.floor(player.currentTime)
+          })
+        }
+      );
 
-    if (!response.ok) {
+      if (!response.ok) {
+        viewRegistered = false;
+      }
+    } catch (_) {
       viewRegistered = false;
     }
   });

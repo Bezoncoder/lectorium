@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Студенты — Lectorium{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+  <div>
+    <h1>Студенты</h1>
+    <p>Найдите студента по логину, чтобы изменить пароль или назначить курс.</p>
+  </div>
+</div>
+
+<section class="form-card admin-search-card">
+  <form method="get" action="/admin/students" class="form form--inline">
+    <label for="student-login">Логин студента</label>
+
+    <div class="form-inline-row">
+      <input
+        id="student-login"
+        name="login"
+        type="text"
+        minlength="3"
+        maxlength="64"
+        value="{{ query }}"
+        placeholder="student_01"
+        required
+      >
+
+      <button class="button" type="submit">
+        <span class="material-symbols-outlined" aria-hidden="true">
+          search
+        </span>
+        <span>Найти</span>
+      </button>
+    </div>
+  </form>
+</section>
+
+{% if student %}
+<section class="student-result-card">
+  <div class="student-result-card__icon">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      person
+    </span>
+  </div>
+
+  <div>
+    <h2>{{ student.login }}</h2>
+    <p class="muted">
+      Создан: {{ student.created_at.strftime("%d.%m.%Y %H:%M") }}
+    </p>
+    <p class="muted">
+      Назначено курсов: {{ student.enrollments | length }}
+    </p>
+  </div>
+
+  <a class="button" href="/admin/students/{{ student.id }}">
+    <span class="material-symbols-outlined" aria-hidden="true">
+      arrow_forward
+    </span>
+    <span>Открыть карточку</span>
+  </a>
+</section>
+{% elif query %}
+<section class="empty-state">
+  <span class="material-symbols-outlined" aria-hidden="true">
+    person_off
+  </span>
+  <h2>Студент не найден</h2>
+  <p>Проверьте логин или создайте пользователя через защищённый API.</p>
+</section>
+{% endif %}
+{% endblock %}
