@@ -602,6 +602,8 @@ async def admin_student_detail(
     user_id: int,
     request: Request,
     raw_current_user: Annotated[User, Depends(require_admin)],
+    error: str | None = Query(default=None),
+    success: str | None = Query(default=None),
 ):
     student = await UserService.get_student_by_id(user_id)
 
@@ -621,9 +623,10 @@ async def admin_student_detail(
             "current_user": current_user,
             "student": student,
             "courses": courses,
+            "error": error,
+            "success": success,
         },
     )
-
 
 @router.post("/students/{user_id}/password/form")
 async def admin_change_student_password_form(
@@ -659,13 +662,16 @@ async def admin_enroll_existing_student_form(
             stream_id=stream_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
+        message = str(exc).replace(" ", "+")
+        return redirect_to(
+            f"/admin/students/{user_id}"
+            f"?error={message}"
+        )
 
-    return redirect_to(f"/admin/students/{user_id}")
-
+    return redirect_to(
+        f"/admin/students/{user_id}"
+        "?success=course_assigned"
+    )
 
 @router.post(
     "/api/students",

@@ -10,6 +10,7 @@ from app.db.models.user import User, UserRole
 from app.schemas.user import UserPydantic
 from app.schemas.video import VideoPydantic
 from app.schemas.video_view import VideoViewCreatePydantic
+from app.services.cabinet import CabinetService
 from app.services.video import VideoService
 
 router = APIRouter(tags=["videos"])
@@ -37,6 +38,17 @@ async def course_videos_list(
             detail="Нет доступа к видео этого курса",
         )
 
+    dashboard = await CabinetService.get_course_dashboard(
+        user_id=current_user.id,
+        course_id=course_id,
+    )
+
+    if dashboard is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Нет доступа к этому курсу",
+        )
+
     raw_videos = await VideoService.get_all_for_stream(stream.id)
 
     videos = [
@@ -50,6 +62,7 @@ async def course_videos_list(
         context={
             "current_user": current_user,
             "course_id": course_id,
+            "course_title": dashboard.course.title,
             "stream": stream,
             "videos": videos,
         },
@@ -86,24 +99,18 @@ async def video_detail(
         back_url = f"/admin/streams/{video.stream_id}/videos"
         back_label = "К видео потока"
     else:
-        # У студента поток определяется сервером через его зачисление,
-        # но кнопка возвращает именно к расписанию выбранного курса.
-        stream = await VideoService.get_stream_for_user_course(
+        dashboard = await CabinetService.get_course_dashboard(
             user_id=current_user.id,
-            course_id=(
-                raw_video.stream.course_id
-                if raw_video.stream is not None
-                else 0
-            ),
+            course_id=raw_video.stream.course_id,
         )
 
-        if stream is None:
+        if dashboard is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Нет доступа к этому курсу",
             )
 
-        back_url = f"/courses/{stream.course_id}"
+        back_url = f"/courses/{dashboard.course.id}"
         back_label = "К расписанию курса"
 
     return request.app.state.templates.TemplateResponse(

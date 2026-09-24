@@ -1,43 +1,51 @@
 import asyncio
 
-from app.core.security import hash_password
-from app.db.dao.user import UserDAO
-from app.db.models.user import UserRole
-from app.db.session import async_session_maker
-
-"""
-
-python -m scripts.create_student
-
-"""
+from app.services.auth import UserService
 
 
-async def create_student():
-    login = "student"
-    password = "student"
-
-    async with async_session_maker() as session:
-        exists = await UserDAO.get_one_or_none(
-            session=session,
+async def create_student(
+    login: str,
+    password: str,
+    course_id: int,
+    stream_id: int | None = None,
+) -> None:
+    try:
+        result = await UserService.create_student_and_enroll(
             login=login,
+            password=password,
+            course_id=course_id,
+            stream_id=stream_id,
         )
+    except ValueError as exc:
+        print(f"Ошибка: {exc}")
+        return
 
-        if exists:
-            print(f"Пользователь {login} уже существует")
-            return
+    if result is None:
+        print(f"Пользователь '{login}' уже существует")
+        return
 
-        student = await UserDAO.add(
-            session=session,
-            login=login,
-            password_hash=hash_password(password),
-            role=UserRole.STUDENT,
-        )
+    selected = (
+        "автоматически"
+        if result.stream_selected_automatically
+        else "явно"
+    )
 
-        print(
-            f"Студент создан: id={student.id}, "
-            f"login={student.login}, role={student.role.value}"
-        )
+    print(
+        f"Студент создан: id={result.user.id}, "
+        f"login={result.user.login}\n"
+        f"Курс: {result.course.title} "
+        f"(id={result.course.id})\n"
+        f"Поток: {result.stream.title} "
+        f"(id={result.stream.id}, выбран {selected})"
+    )
 
 
 if __name__ == "__main__":
-    asyncio.run(create_student())
+    asyncio.run(
+        create_student(
+            login="student4",
+            password="student4",
+            course_id=2,
+            stream_id=None,
+        )
+    )

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Видео — {{ stream.course.title }}{% endblock %}
+{% block title %}Видео — {{ course_title }}{% endblock %}
 
 {% block content %}
 <div class="page-heading">
@@ -9,11 +9,11 @@
       <span class="material-symbols-outlined" aria-hidden="true">
         arrow_back
       </span>
-      <span>К курсу</span>
+      <span>К расписанию курса</span>
     </a>
 
     <h1>Видео курса</h1>
-    <p>{{ stream.course.title }} · {{ stream.title }}</p>
+    <p>{{ course_title }} · {{ stream.title }}</p>
   </div>
 </div>
 
@@ -94,7 +94,10 @@
     video_library
   </span>
   <h2>Записи пока не добавлены</h2>
-  <p>Когда преподаватель загрузит материалы этого потока, они появятся здесь.</p>
+  <p>
+    Когда преподаватель загрузит материалы этого потока,
+    они появятся здесь.
+  </p>
 </section>
 {% endif %}
 {% endblock %}

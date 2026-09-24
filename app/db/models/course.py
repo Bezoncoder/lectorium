@@ -61,4 +61,5 @@ class Course(Base):
         back_populates="course",
         cascade="all, delete-orphan",
         lazy="selectin",
+        overlaps="stream,enrollments",
     )

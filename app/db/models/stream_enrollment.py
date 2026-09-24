@@ -96,8 +96,10 @@ class StreamEnrollment(Base):
 
     course: Mapped["Course"] = relationship(
         back_populates="enrollments",
+        overlaps="enrollments,stream",
     )
 
     stream: Mapped["Stream"] = relationship(
         back_populates="enrollments",
+        overlaps="course,enrollments",
     )

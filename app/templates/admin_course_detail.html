@@ -82,11 +82,19 @@
 
       <label for="stream-status">Статус</label>
       <select id="stream-status" name="stream_status">
+        {% set stream_status_labels = {
+          "draft": "Черновик",
+          "active": "Активен",
+          "finished": "Завершён",
+          "archived": "Архив"
+        } %}
+
         {% for status in stream_statuses %}
-        <option value="{{ status.value }}"
+        <option
+          value="{{ status.value }}"
           {% if status.value == "draft" %}selected{% endif %}
         >
-          {{ status.value }}
+          {{ stream_status_labels[status.value] }}
         </option>
         {% endfor %}
       </select>

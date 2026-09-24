@@ -3,6 +3,13 @@
 {% block title %}{{ stream.title }} — Lectorium{% endblock %}
 
 {% block content %}
+{% set stream_status_labels = {
+  "draft": "Черновик",
+  "active": "Активен",
+  "finished": "Завершён",
+  "archived": "Архив"
+} %}
+
 <div class="page-heading">
   <div>
     <a class="back-link" href="/admin/courses/{{ stream.course_id }}">
@@ -81,7 +88,7 @@
           value="{{ status.value }}"
           {% if stream.status == status.value %}selected{% endif %}
         >
-          {{ status.value }}
+          {{ stream_status_labels[status.value] }}
         </option>
         {% endfor %}
       </select>
@@ -174,6 +181,7 @@
       >
         <div class="admin-lesson-card__head">
           <h3>Лекция {{ loop.index }}</h3>
+
           <input
             name="sort_order"
             type="hidden"

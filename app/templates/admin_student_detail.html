@@ -19,6 +19,18 @@
   </div>
 </div>
 
+{% if error %}
+<p class="alert alert-error">
+  {{ error.replace("+", " ") }}
+</p>
+{% endif %}
+
+{% if success == "course_assigned" %}
+<p class="alert alert-success">
+  Курс и поток успешно назначены студенту.
+</p>
+{% endif %}
+
 <section class="admin-schedule-grid">
   <article class="form-card admin-schedule-card">
     <h2>Сменить пароль</h2>
@@ -61,7 +73,12 @@
       class="form"
     >
       <label for="course-id">Курс</label>
-      <select id="course-id" name="course_id" required>
+      <select
+        id="course-id"
+        name="course_id"
+        required
+        onchange="filterStreams()"
+      >
         <option value="">Выберите курс</option>
         {% for course in courses %}
         <option value="{{ course.id }}">
@@ -71,17 +88,29 @@
       </select>
 
       <label for="stream-id">Поток</label>
-      <input
-        id="stream-id"
-        name="stream_id"
-        type="number"
-        min="1"
-        placeholder="Необязательно"
-      >
+      <select id="stream-id" name="stream_id">
+        <option value="">Выбрать автоматически</option>
 
-      <p class="muted">
-        Если ID потока не указан, студент будет назначен
-        в ближайший активный поток выбранного курса.
+        {% for course in courses %}
+          {% for stream in course.streams %}
+          <option
+            value="{{ stream.id }}"
+            data-course-id="{{ course.id }}"
+            data-status="{{ stream.status }}"
+            hidden
+          >
+            {{ course.title }} · {{ stream.title }}
+            {% if stream.status != "active" %}
+            ({{ stream.status }})
+            {% endif %}
+          </option>
+          {% endfor %}
+        {% endfor %}
+      </select>
+
+      <p class="muted" id="stream-help">
+        Если поток не выбран, система назначит студента
+        в текущий или ближайший активный поток выбранного курса.
       </p>
 
       <button class="button" type="submit">
@@ -114,7 +143,7 @@
 
       <div class="stream-card__content">
         <div class="course-card__head">
-          <h3>Курс #{{ enrollment.course_id }}</h3>
+          <h3>Курс ID: {{ enrollment.course_id }}</h3>
           <span class="status-chip
             {% if enrollment.status == "active" %}status-chip--active{% endif %}
           ">
@@ -143,4 +172,47 @@
   </section>
   {% endif %}
 </section>
+
+<script>
+  function filterStreams() {
+    const courseSelect = document.getElementById("course-id");
+    const streamSelect = document.getElementById("stream-id");
+    const streamHelp = document.getElementById("stream-help");
+    const selectedCourseId = courseSelect.value;
+
+    streamSelect.value = "";
+
+    for (const option of streamSelect.options) {
+      if (!option.dataset.courseId) {
+        continue;
+      }
+
+      option.hidden = option.dataset.courseId !== selectedCourseId;
+    }
+
+    if (!selectedCourseId) {
+      streamHelp.textContent =
+        "Сначала выберите курс, затем при необходимости выберите поток.";
+      return;
+    }
+
+    const activeStreams = Array.from(streamSelect.options).filter(
+      (option) =>
+        option.dataset.courseId === selectedCourseId &&
+        option.dataset.status === "active"
+    );
+
+    if (activeStreams.length === 0) {
+      streamHelp.textContent =
+        "У выбранного курса нет активных потоков. " +
+        "Сначала откройте курс и переведите нужный поток в статус active.";
+      return;
+    }
+
+    streamHelp.textContent =
+      "Поток можно выбрать вручную. " +
+      "Если оставить поле пустым, будет выбран текущий " +
+      "или ближайший активный поток.";
+  }
+</script>
 {% endblock %}

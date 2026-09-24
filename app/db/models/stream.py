@@ -120,6 +120,7 @@ class Stream(Base):
         back_populates="stream",
         cascade="all, delete-orphan",
         lazy="selectin",
+        overlaps="course,enrollments",
     )
 
     videos: Mapped[list["Video"]] = relationship(
