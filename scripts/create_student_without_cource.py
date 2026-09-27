@@ -26,7 +26,7 @@ async def create_student(
 if __name__ == "__main__":
     asyncio.run(
         create_student(
-            login="student5",
-            password="student5",
+            login="student",
+            password="student",
         )
     )
