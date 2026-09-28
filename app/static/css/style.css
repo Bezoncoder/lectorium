@@ -1628,3 +1628,106 @@ tr:last-child td {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Загрузка видео: выбранный файл, прогресс, статусы и отмена */
+
+.upload-file-info {
+  margin: -6px 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.upload-status {
+  margin-top: 22px;
+  padding: 18px;
+  background:
+    linear-gradient(
+      140deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.012)
+    ),
+    var(--md-surface-container);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-1);
+}
+
+.upload-status__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  color: var(--md-on-surface);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.upload-status__header strong {
+  flex: 0 0 auto;
+  color: var(--md-primary);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.upload-progress {
+  display: block;
+  width: 100%;
+  height: 12px;
+  overflow: hidden;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+}
+
+.upload-progress::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: inherit;
+}
+
+.upload-progress::-webkit-progress-value {
+  background: linear-gradient(
+    90deg,
+    var(--md-primary),
+    var(--md-secondary)
+  );
+  border-radius: inherit;
+  transition: width 180ms ease;
+}
+
+.upload-progress::-moz-progress-bar {
+  background: linear-gradient(
+    90deg,
+    var(--md-primary),
+    var(--md-secondary)
+  );
+  border-radius: inherit;
+}
+
+.upload-details {
+  margin: 10px 0 0;
+  color: var(--md-on-surface-variant);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.upload-cancel-button {
+  margin-top: 16px;
+}
+
+#upload-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 599px) {
+  .upload-status__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .upload-cancel-button {
+    width: 100%;
+  }
+}

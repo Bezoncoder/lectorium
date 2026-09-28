@@ -1,72 +1,353 @@
 {% extends "base.html" %}
 
-{% if video %}
-  {% set page_title = "Редактирование видео" %}
-  {% set form_action = "/admin/streams/" ~ stream.id ~ "/videos/" ~ video.id %}
-{% else %}
-  {% set page_title = "Новое видео" %}
-  {% set form_action = "/admin/streams/" ~ stream.id ~ "/videos" %}
-{% endif %}
-
-{% block title %}{{ page_title }} — Lectorium{% endblock %}
+{% block title %}
+{% if video %}Редактирование видео{% else %}Загрузка видео{% endif %} — Lectorium
+{% endblock %}
 
 {% block content %}
-<section class="form-card">
-  <div class="page-heading">
-    <div>
-      <h1>{{ page_title }}</h1>
-      <p>{{ stream.course.title }} · {{ stream.title }}</p>
-    </div>
-
-    <a
-      class="button button-secondary"
-      href="/admin/streams/{{ stream.id }}/videos"
-    >
-      Назад
-    </a>
+<div class="page-heading">
+  <div>
+    {% if video %}
+    <h1>Редактирование видео</h1>
+    <p>Измените название или описание записи.</p>
+    {% else %}
+    <h1>Загрузить видео</h1>
+    <p>Добавьте новую запись в поток «{{ stream.title }}».</p>
+    {% endif %}
   </div>
 
-  <form
-    method="post"
-    action="{{ form_action }}"
-    class="form"
-    {% if not video %}enctype="multipart/form-data"{% endif %}
+  <a
+    class="button button-secondary"
+    href="/admin/streams/{{ stream.id }}/videos"
   >
-    <label for="title">Название</label>
+    <span class="material-symbols-outlined" aria-hidden="true">
+      arrow_back
+    </span>
+    <span>К списку видео</span>
+  </a>
+</div>
+
+<section class="form-card">
+  <form
+    id="video-upload-form"
+    method="post"
+    action="{% if video %}/admin/streams/{{ stream.id }}/videos/{{ video.id }}{% else %}/admin/streams/{{ stream.id }}/videos{% endif %}"
+    enctype="multipart/form-data"
+    class="form"
+  >
+    <label for="video-title">Название</label>
     <input
-      id="title"
+      id="video-title"
       name="title"
       type="text"
       maxlength="255"
       value="{{ video.title if video else '' }}"
+      placeholder="Например: #1 Python API"
       required
     >
 
-    <label for="description">Описание</label>
+    <label for="video-description">Описание</label>
     <textarea
-      id="description"
+      id="video-description"
       name="description"
-      rows="7"
+      rows="5"
+      maxlength="5000"
+      placeholder="Кратко опишите содержание лекции"
     >{{ video.description if video and video.description else '' }}</textarea>
 
     {% if not video %}
-    <label for="video_file">Видеофайл</label>
+    <label for="video-file">Видеофайл</label>
     <input
-      id="video_file"
+      id="video-file"
       name="video_file"
       type="file"
-      accept=".mp4,.webm,.ogv,.ogg,video/mp4,video/webm,video/ogg"
+      accept="video/*"
       required
     >
-    {% else %}
-    <p class="muted">
-      Исходный файл: {{ video.original_filename }}
+
+    <p id="selected-file-info" class="muted upload-file-info">
+      Файл ещё не выбран.
     </p>
     {% endif %}
 
-    <button class="button" type="submit">
-      {% if video %}Сохранить{% else %}Загрузить{% endif %}
+    <button id="upload-button" class="button" type="submit">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        {% if video %}save{% else %}upload{% endif %}
+      </span>
+      <span>
+        {% if video %}Сохранить изменения{% else %}Загрузить видео{% endif %}
+      </span>
     </button>
   </form>
+
+  {% if not video %}
+  <section
+    id="upload-status"
+    class="upload-status"
+    hidden
+    aria-live="polite"
+  >
+    <div class="upload-status__header">
+      <span id="upload-message">Подготовка к загрузке…</span>
+      <strong id="upload-percent">0%</strong>
+    </div>
+
+    <progress
+      id="upload-progress"
+      class="upload-progress"
+      value="0"
+      max="100"
+    >
+      0%
+    </progress>
+
+    <p id="upload-details" class="upload-details">
+      Не закрывайте страницу до завершения загрузки.
+    </p>
+
+    <button
+      id="cancel-upload-button"
+      class="button button-danger upload-cancel-button"
+      type="button"
+      hidden
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">
+        close
+      </span>
+      <span>Отменить загрузку</span>
+    </button>
+  </section>
+  {% endif %}
 </section>
+
+{% if not video %}
+<script>
+  (() => {
+    const form = document.getElementById("video-upload-form");
+    const fileInput = document.getElementById("video-file");
+    const selectedFileInfo = document.getElementById("selected-file-info");
+    const uploadButton = document.getElementById("upload-button");
+
+    const uploadStatus = document.getElementById("upload-status");
+    const uploadMessage = document.getElementById("upload-message");
+    const uploadPercent = document.getElementById("upload-percent");
+    const uploadProgress = document.getElementById("upload-progress");
+    const uploadDetails = document.getElementById("upload-details");
+
+    const cancelButton = document.getElementById("cancel-upload-button");
+
+    let currentRequest = null;
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes === 0) {
+        return "0 Б";
+      }
+
+      const units = ["Б", "КБ", "МБ", "ГБ", "ТБ"];
+
+      const unitIndex = Math.min(
+        Math.floor(Math.log(bytes) / Math.log(1024)),
+        units.length - 1,
+      );
+
+      const value = bytes / Math.pow(1024, unitIndex);
+      const precision = unitIndex === 0 ? 0 : 1;
+
+      return `${value.toFixed(precision)} ${units[unitIndex]}`;
+    }
+
+    function setUploadState({
+      message,
+      percent,
+      details,
+      isLoading,
+      isCancelable,
+    }) {
+      uploadStatus.hidden = false;
+      uploadMessage.textContent = message;
+      uploadDetails.textContent = details;
+
+      if (typeof percent === "number") {
+        uploadProgress.value = percent;
+        uploadPercent.textContent = `${percent}%`;
+      } else {
+        uploadProgress.removeAttribute("value");
+        uploadPercent.textContent = "…";
+      }
+
+      uploadButton.disabled = isLoading;
+      cancelButton.hidden = !isCancelable;
+    }
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files[0];
+
+      if (!file) {
+        selectedFileInfo.textContent = "Файл ещё не выбран.";
+        return;
+      }
+
+      selectedFileInfo.textContent = (
+        `Выбран файл: ${file.name} · ${formatBytes(file.size)}`
+      );
+    });
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert("Выберите видеофайл.");
+        return;
+      }
+
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData(form);
+
+      currentRequest = xhr;
+
+      /*
+       * Важно:
+       * Используется form.action, который теперь содержит:
+       * /admin/streams/<stream_id>/videos
+       */
+      xhr.open(
+        form.method || "POST",
+        form.action,
+        true,
+      );
+
+      xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+
+      setUploadState({
+        message: "Видео загружается на сервер…",
+        percent: 0,
+        details: `Отправлено 0 Б из ${formatBytes(file.size)}.`,
+        isLoading: true,
+        isCancelable: true,
+      });
+
+      xhr.upload.addEventListener("progress", (progressEvent) => {
+        if (!progressEvent.lengthComputable) {
+          setUploadState({
+            message: "Видео загружается на сервер…",
+            percent: null,
+            details: "Идёт передача файла. Не закрывайте страницу.",
+            isLoading: true,
+            isCancelable: true,
+          });
+
+          return;
+        }
+
+        const percent = Math.round(
+          (progressEvent.loaded / progressEvent.total) * 100,
+        );
+
+        setUploadState({
+          message: "Видео загружается на сервер…",
+          percent,
+          details: (
+            `Отправлено ${formatBytes(progressEvent.loaded)} `
+            + `из ${formatBytes(progressEvent.total)}.`
+          ),
+          isLoading: true,
+          isCancelable: true,
+        });
+      });
+
+      xhr.upload.addEventListener("load", () => {
+        setUploadState({
+          message: "Файл отправлен. Сервер сохраняет видео…",
+          percent: 100,
+          details: "Пожалуйста, не закрывайте страницу.",
+          isLoading: true,
+          isCancelable: false,
+        });
+      });
+
+      xhr.addEventListener("load", () => {
+        currentRequest = null;
+
+        if (xhr.status >= 200 && xhr.status < 400) {
+          setUploadState({
+            message: "Видео успешно загружено.",
+            percent: 100,
+            details: "Переходим к списку видео потока…",
+            isLoading: false,
+            isCancelable: false,
+          });
+
+          window.location.href = (
+            "/admin/streams/{{ stream.id }}/videos"
+          );
+
+          return;
+        }
+
+        let details = `Сервер вернул ошибку HTTP ${xhr.status}.`;
+
+        if (xhr.responseText) {
+          details += ` ${xhr.responseText}`;
+        }
+
+        setUploadState({
+          message: "Не удалось загрузить видео.",
+          percent: 0,
+          details,
+          isLoading: false,
+          isCancelable: false,
+        });
+      });
+
+      xhr.addEventListener("error", () => {
+        currentRequest = null;
+
+        setUploadState({
+          message: "Ошибка сети при загрузке видео.",
+          percent: 0,
+          details: "Проверьте соединение с сервером и повторите попытку.",
+          isLoading: false,
+          isCancelable: false,
+        });
+      });
+
+      xhr.addEventListener("abort", () => {
+        currentRequest = null;
+
+        setUploadState({
+          message: "Загрузка отменена.",
+          percent: 0,
+          details: "Файл не был загружен полностью.",
+          isLoading: false,
+          isCancelable: false,
+        });
+      });
+
+      xhr.addEventListener("timeout", () => {
+        currentRequest = null;
+
+        setUploadState({
+          message: "Время ожидания загрузки истекло.",
+          percent: 0,
+          details: "Попробуйте загрузить видео ещё раз.",
+          isLoading: false,
+          isCancelable: false,
+        });
+      });
+
+      xhr.timeout = 60 * 60 * 1000;
+
+      xhr.send(formData);
+    });
+
+    cancelButton.addEventListener("click", () => {
+      if (currentRequest) {
+        currentRequest.abort();
+      }
+    });
+  })();
+</script>
+{% endif %}
 {% endblock %}
